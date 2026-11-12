@@ -23,6 +23,7 @@ Usage:
 import argparse
 import datetime as dt
 import json
+import socket
 import sys
 import time
 
@@ -48,6 +49,7 @@ HEADERS = {
     "Origin": "https://www.tsetmc.com",
 }
 TEHRAN_TZ = dt.timezone(dt.timedelta(hours=3, minutes=30))
+socket.setdefaulttimeout(20)  # never hang on a silent network path
 
 SUMMARY_LIMIT = 3  # how many top rows each category keeps in the "top" arrays
 
@@ -88,11 +90,15 @@ def classify(name, sector, flow):
     return "stocks"
 
 
-def fetch(session, attempts=3, pause=2.0):
+def fetch(session, attempts=3, pause=2.0, budget=150.0):
+    """Fetch the market watch, giving up after a hard time budget."""
+    started = time.monotonic()
     last_error = None
     for i in range(attempts):
+        if time.monotonic() - started > budget:
+            break
         try:
-            resp = session.get(JSON_URL, params=JSON_PARAMS, timeout=60)
+            resp = session.get(JSON_URL, params=JSON_PARAMS, timeout=(10, 35))
             resp.raise_for_status()
             rows = resp.json().get("marketwatch") or []
             if rows:
@@ -102,7 +108,7 @@ def fetch(session, attempts=3, pause=2.0):
             last_error = exc
         if i + 1 < attempts:
             time.sleep(pause * (i + 1))
-    raise SystemExit("TSETMC request failed: %s" % last_error)
+    raise SystemExit("TSETMC request failed after %.0fs: %s" % (time.monotonic() - started, last_error))
 
 
 def build(rows):

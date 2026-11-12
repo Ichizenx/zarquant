@@ -16,6 +16,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,7 +30,7 @@ jobs:
         run: pip install requests
 
       - name: Fetch TSETMC data
-        run: python fetch_data.py -o data.json
+        run: timeout 240 python fetch_data.py -o data.json
 
       - name: Commit updated data.json
         run: |
