@@ -3,82 +3,75 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#05070c">
+<meta name="theme-color" content="#131722">
 <title>Zarquant | زارکوانت</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23089981'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='38' font-weight='700' text-anchor='middle' fill='%23071a17'%3EZ%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2334d399'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='38' font-weight='700' text-anchor='middle' fill='%2304211a'%3EZ%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="aurora" aria-hidden="true"></div>
+<div class="app" id="app">
 
-<header class="topbar">
-  <div class="brand">
-    <div class="mark" aria-hidden="true">Z</div>
-    <div class="brand-text">
-      <h1>Zarquant <small>زارکوانت</small></h1>
-      <p>داشبورد بازار سرمایه · دادهٔ TSETMC</p>
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">Z</div>
+      <div class="brand-text">
+        <h1>Zarquant <small>زارکوانت</small></h1>
+        <p>داشبورد بازار سرمایه</p>
+      </div>
     </div>
-  </div>
-  <div class="top-actions">
-    <span class="updated" id="updated">در حال بارگذاری…</span>
-    <button class="icon-btn" id="refresh" type="button" aria-label="بارگذاری مجدد" title="بارگذاری مجدد">↻</button>
-  </div>
-</header>
+    <div class="top-actions">
+      <span class="updated" id="updated">در حال بارگذاری…</span>
+      <button class="icon-btn" id="refresh" type="button" aria-label="بارگذاری مجدد" title="بارگذاری مجدد">⟳</button>
+    </div>
+  </header>
 
-<main class="wrap">
-  <section class="kpis" id="kpis" aria-label="خلاصه بازار"></section>
+  <main class="stage">
+    <section class="summary" id="summary" aria-label="خلاصه بازار"></section>
 
-  <nav class="tabs" id="tabs" role="tablist" aria-label="دسته‌ها"></nav>
+    <section class="detail" id="detail">
+      <div class="detail-top">
+        <div class="detail-id">
+          <span class="detail-symbol" id="dSymbol">—</span>
+          <span class="detail-name" id="dName">یک نماد را از واچ‌لیست انتخاب کنید</span>
+        </div>
+        <span class="detail-badge" id="dBadge">—</span>
+      </div>
+      <div class="detail-price" id="dPrice">—</div>
+      <div class="detail-grid" id="dStats"></div>
+    </section>
 
-  <div class="toolbar">
-    <label class="search" for="search">
-      <span class="search-icon" aria-hidden="true">⌕</span>
+    <section class="groups" id="groups" aria-label="خلاصه دسته‌ها"></section>
+
+    <section class="note">
+      داده‌ها از بازار TSETMC گرفته می‌شوند؛ برای دیدن جزئیات هر نماد روی آن در واچ‌لیست کلیک کنید.
+    </section>
+  </main>
+
+  <aside class="watchlist" id="watchlist" aria-label="واچ‌لیست">
+    <div class="wl-head">
+      <span class="wl-title">واچ‌لیست</span>
+      <span class="wl-count" id="wlCount"></span>
+      <button class="wl-btn" id="collapseBtn" type="button" aria-label="جمع کردن واچ‌لیست" title="جمع کردن">›</button>
+    </div>
+
+    <div class="wl-search">
+      <span aria-hidden="true">⌕</span>
       <input id="search" type="search" placeholder="جستجوی نماد یا نام شرکت…" autocomplete="off" spellcheck="false">
-    </label>
-    <label class="select-wrap">
-      <span class="sr-only">ترتیب</span>
-      <select id="sort">
-        <option value="val">ارزش معاملات</option>
-        <option value="v">حجم معاملات</option>
-        <option value="ch">درصد تغییر</option>
-        <option value="p">قیمت</option>
-        <option value="s">نماد</option>
-      </select>
-    </label>
-  </div>
-
-  <section class="panel">
-    <div class="table-scroll">
-      <table id="table">
-        <thead>
-          <tr>
-            <th class="col-rank">#</th>
-            <th data-key="s" class="sortable">نماد</th>
-            <th data-key="n" class="sortable col-company">شرکت</th>
-            <th data-key="p" class="sortable num">قیمت (ریال)</th>
-            <th data-key="ch" class="sortable num">تغییر</th>
-            <th data-key="v" class="sortable num">حجم</th>
-            <th data-key="val" class="sortable num">ارزش (همت)</th>
-            <th data-key="t" class="sortable num col-trades">معاملات</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
     </div>
-    <div class="cards" id="cards"></div>
-    <p class="empty" id="empty" hidden>موردی پیدا نشد.</p>
-    <p class="hint" id="hint"></p>
-  </section>
-</main>
 
-<footer class="foot">
-  Zarquant · زارکوانت — منبع داده: TSETMC. این صفحه صرفاً جنبه اطلاع‌رسانی دارد و توصیه سرمایه‌گذاری نیست.
-</footer>
+    <div class="wl-cols" aria-hidden="true">
+      <span>نماد</span><span>آخرین</span><span>تغییر</span><span>تغییر ٪</span>
+    </div>
+
+    <div class="wl-body" id="wlBody"></div>
+    <p class="wl-empty" id="wlEmpty" hidden>نمادی پیدا نشد.</p>
+  </aside>
+
+  <button class="wl-open" id="openBtn" type="button" hidden aria-label="باز کردن واچ‌لیست">‹ واچ‌لیست</button>
+</div>
 
 <script src="script.js"></script>
 </body>
 </html>
-
-
