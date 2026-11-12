@@ -30,6 +30,11 @@ jobs:
         run: pip install requests
 
       - name: Fetch TSETMC data
+        # TSETMC rejects many non-Iranian networks; set the TSETMC_PROXY secret
+        # to an HTTP proxy if the runner cannot reach cdn.tsetmc.com directly.
+        env:
+          HTTP_PROXY: ${{ secrets.TSETMC_PROXY }}
+          HTTPS_PROXY: ${{ secrets.TSETMC_PROXY }}
         run: timeout 240 python fetch_data.py -o data.json
 
       - name: Commit updated data.json
