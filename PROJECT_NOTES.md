@@ -17,6 +17,7 @@ Read this file before changing anything; it explains the pipeline, the files, th
 | Purpose | Static market dashboard for the Tehran Stock Exchange (TSETMC) with a TradingView-style watchlist UI |
 | Live site | https://ichizenx.github.io/zarquant/ |
 | Repository | https://github.com/Ichizenx/zarquant (default branch `main`) |
+| Legacy remote | https://github.com/esmaillbeya/bayat — the repository was renamed; GitHub redirects this URL to the current one |
 | Stack | Python 3 + `requests` (scraper), vanilla HTML/CSS/JS (frontend), GitHub Pages + GitHub Actions |
 | Build step | None — the site is served as-is from the repository root |
 | Data source | TSETMC market watch JSON API (`https://cdn.tsetmc.com/api/ClosingPrice/GetMarketWatch`) |
