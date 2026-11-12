@@ -30,6 +30,10 @@ jobs:
         run: pip install requests
 
       - name: Fetch TSETMC data
+        id: fetch
+        # Keep going so the site still gets re-encrypted when TSETMC is unreachable
+        # from the runner; the job is failed explicitly at the end.
+        continue-on-error: true
         # TSETMC rejects many non-Iranian networks; set the TSETMC_PROXY secret
         # to an HTTP proxy if the runner cannot reach cdn.tsetmc.com directly.
         env:
@@ -73,3 +77,9 @@ jobs:
             git commit -m "chore: update market data and encrypted site"
             git push
           fi
+
+      - name: Fail when the market data refresh failed
+        if: steps.fetch.outcome == 'failure'
+        run: |
+          echo "::error::TSETMC was unreachable from the runner; data.json was not refreshed (the site is still re-encrypted)."
+          exit 1
