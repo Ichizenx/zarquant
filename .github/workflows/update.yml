@@ -16,7 +16,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -37,14 +37,39 @@ jobs:
           HTTPS_PROXY: ${{ secrets.TSETMC_PROXY }}
         run: timeout 240 python fetch_data.py -o data.json
 
-      - name: Commit updated data.json
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install StatiCrypt
+        run: npm install -g staticrypt@3
+
+      - name: Encrypt index.html
+        env:
+          STATICRYPT_PASSWORD: ${{ secrets.STATICRYPT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${STATICRYPT_PASSWORD}" ]; then
+            echo "::error::STATICRYPT_PASSWORD secret is not set"
+            exit 1
+          fi
+          cp index.src.html index.html
+          rm -rf .staticrypt-build
+          staticrypt index.html -p "$STATICRYPT_PASSWORD" -d .staticrypt-build
+          cp .staticrypt-build/index.html index.html
+          rm -rf .staticrypt-build
+          grep -qi "staticrypt" index.html
+          echo "index.html encrypted."
+
+      - name: Commit updated files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.json
+          git add data.json index.html
           if git diff --cached --quiet; then
-            echo "data.json unchanged, nothing to commit."
+            echo "No changes to commit."
           else
-            git commit -m "chore: update market data"
+            git commit -m "chore: update market data and encrypted site"
             git push
           fi
