@@ -1,29 +1,83 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hello World</title>
-<style>
-  html, body { height: 100%; margin: 0; }
-  body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #d10000;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    color: #ffffff;
-    text-align: center;
-  }
-  h1 {
-    margin: 0;
-    font-size: clamp(3rem, 12vw, 9rem);
-    font-weight: 800;
-    letter-spacing: 0.02em;
-  }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080b14">
+<title>بازار تهران — نمای بازار</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Hello World</h1>
+<div class="aurora" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark" aria-hidden="true">ت</div>
+    <div class="brand-text">
+      <h1>بازار تهران</h1>
+      <p>نمای یکجای سهام، صندوق‌ها و اختیار معامله</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span class="updated" id="updated">در حال بارگذاری…</span>
+    <button class="icon-btn" id="refresh" type="button" aria-label="بارگذاری مجدد" title="بارگذاری مجدد">↻</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="kpis" id="kpis" aria-label="خلاصه بازار"></section>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="دسته‌ها"></nav>
+
+  <div class="toolbar">
+    <label class="search" for="search">
+      <span class="search-icon" aria-hidden="true">⌕</span>
+      <input id="search" type="search" placeholder="جستجوی نماد یا نام شرکت…" autocomplete="off" spellcheck="false">
+    </label>
+    <label class="select-wrap">
+      <span class="sr-only">ترتیب</span>
+      <select id="sort">
+        <option value="val">ارزش معاملات</option>
+        <option value="v">حجم معاملات</option>
+        <option value="ch">درصد تغییر</option>
+        <option value="p">قیمت</option>
+        <option value="s">نماد</option>
+      </select>
+    </label>
+  </div>
+
+  <section class="panel">
+    <div class="table-scroll">
+      <table id="table">
+        <thead>
+          <tr>
+            <th class="col-rank">#</th>
+            <th data-key="s" class="sortable">نماد</th>
+            <th data-key="n" class="sortable col-company">شرکت</th>
+            <th data-key="p" class="sortable num">قیمت (ریال)</th>
+            <th data-key="ch" class="sortable num">تغییر</th>
+            <th data-key="v" class="sortable num">حجم</th>
+            <th data-key="val" class="sortable num">ارزش (همت)</th>
+            <th data-key="t" class="sortable num col-trades">معاملات</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="cards" id="cards"></div>
+    <p class="empty" id="empty" hidden>موردی پیدا نشد.</p>
+    <p class="hint" id="hint"></p>
+  </section>
+</main>
+
+<footer class="foot">
+  منبع داده: TSETMC — این صفحه صرفاً جنبه اطلاع‌رسانی دارد و توصیه سرمایه‌گذاری نیست.
+</footer>
+
+<script src="script.js"></script>
 </body>
 </html>
+
+
