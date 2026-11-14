@@ -64,7 +64,16 @@ jobs:
           fi
           cp index.src.html index.html
           rm -rf .staticrypt-build
-          staticrypt index.html -p "$STATICRYPT_PASSWORD" -d .staticrypt-build
+          staticrypt index.html -p "$STATICRYPT_PASSWORD" -d .staticrypt-build \
+            --short --remember 30 \
+            --template-title "Zarquant | زارکوانت" \
+            --template-instructions "برای دیدن داشبورد، رمز عبور را وارد کنید." \
+            --template-button "ورود" \
+            --template-placeholder "رمز عبور" \
+            --template-remember "مرا به خاطر بسپار" \
+            --template-error "رمز عبور نادرست است." \
+            --template-color-primary "#089981" \
+            --template-color-secondary "#131722"
           cp .staticrypt-build/index.html index.html
           rm -rf .staticrypt-build
           grep -qi "staticrypt" index.html
