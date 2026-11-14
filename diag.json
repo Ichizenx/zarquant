@@ -1,0 +1,105 @@
+{
+ "started": "2026-11-14T14:15:42+03:30",
+ "attempts": [
+  {
+   "kind": "direct",
+   "target": "-",
+   "ok": false,
+   "detail": "<urlopen error timed out>"
+  },
+  {
+   "kind": "discovered",
+   "target": "http://46.209.207.147:8080",
+   "ok": false,
+   "detail": "<urlopen error timed out>"
+  },
+  {
+   "kind": "discovered",
+   "target": "http://178.252.171.229:8080",
+   "ok": false,
+   "detail": "<urlopen error timed out>"
+  },
+  {
+   "kind": "discovered",
+   "target": "http://46.209.207.158:8080",
+   "ok": false,
+   "detail": "<urlopen error timed out>"
+  },
+  {
+   "kind": "discovered",
+   "target": "http://46.209.207.151:8080",
+   "ok": false,
+   "detail": "<urlopen error timed out>"
+  },
+  {
+   "kind": "discovered",
+   "target": "http://85.9.87.26:8080",
+   "ok": false,
+   "detail": "<urlopen error timed out>"
+  },
+  {
+   "kind": "discovered",
+   "target": "http://80.191.46.62:1090",
+   "ok": true,
+   "detail": "2187 instruments"
+  }
+ ],
+ "lists": [
+  {
+   "source": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/countries/IR/data.txt",
+   "found": 61
+  },
+  {
+   "source": "https://api.proxyscrape.com/v4/free-proxy-list/get",
+   "found": 1
+  },
+  {
+   "source": "https://proxylist.geonode.com/api/proxy-list",
+   "found": 24
+  }
+ ],
+ "list_errors": [
+  "list unavailable (HTTPError): http.txt",
+  "list unavailable (HTTPError): https.txt",
+  "list unavailable (HTTPError): get"
+ ],
+ "candidates": 86,
+ "working": [
+  {
+   "proxy": "http://46.209.207.147:8080",
+   "seconds": 1.3
+  },
+  {
+   "proxy": "http://178.252.171.229:8080",
+   "seconds": 5.9
+  },
+  {
+   "proxy": "http://46.209.207.158:8080",
+   "seconds": 6.6
+  },
+  {
+   "proxy": "http://46.209.207.151:8080",
+   "seconds": 8.5
+  },
+  {
+   "proxy": "http://85.9.87.26:8080",
+   "seconds": 8.7
+  },
+  {
+   "proxy": "http://80.191.46.62:1090",
+   "seconds": 24.8
+  }
+ ],
+ "transport": "proxy",
+ "counts": {
+  "stocks": 1179,
+  "funds": 356,
+  "goldFunds": 64,
+  "options": 542,
+  "other": 45
+ },
+ "seeds": 0,
+ "seconds": 242.4,
+ "status": "ok",
+ "finished": "2026-11-14T14:19:45+03:30"
+}
