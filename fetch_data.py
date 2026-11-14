@@ -92,6 +92,10 @@ PROXY_SOURCES = (
 IP_PORT = re.compile(r"(?:\w+://)?(\d{1,3}(?:\.\d{1,3}){3}):(\d{2,5})")
 PROXY_ENV_NAMES = ("TSETMC_PROXY", "HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy")
 
+# Tiny endpoint used while racing proxies: same host, ~400 bytes instead of the
+# ~1.5 MB market watch, so a bad proxy fails fast.
+PROBE_URL = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDaily/46348559193224090/0"
+
 FLOW_DERIVATIVES = 3
 FLOW_CAPACITY = 6
 FLOW_COMMODITY_FUNDS = 7
@@ -192,8 +196,16 @@ def market_url():
     return MARKET_URL + "?" + urllib.parse.urlencode(MARKET_PARAMS)
 
 
+def probe_tiny(client, timeout):
+    """Fast reachability check: a ~400 byte JSON from the same TSETMC host."""
+    payload = client.get_json(PROBE_URL, attempts=1, budget=timeout, timeout=timeout)
+    if not isinstance(payload, dict) or "closingPriceDaily" not in payload:
+        raise RuntimeError("unexpected probe payload")
+    return True
+
+
 def probe_transport(client, timeout):
-    """Cheap end-to-end check: the market watch must return real instruments."""
+    """Full check used for the chosen transport: real instruments must come back."""
     payload = client.get_json(market_url(), attempts=1, budget=timeout, timeout=timeout)
     rows = payload.get("marketwatch") or []
     if not rows:
@@ -201,7 +213,7 @@ def probe_transport(client, timeout):
     return len(rows)
 
 
-def collect_proxy_candidates(client, limit=200):
+def collect_proxy_candidates(client, limit=250, report=None):
     found, seen = [], set()
 
     def add(address):
@@ -211,10 +223,14 @@ def collect_proxy_candidates(client, limit=200):
 
     for kind, url in PROXY_SOURCES:
         try:
-            text = client.get_text(url, timeout=20)
+            text = client.get_text(url, timeout=25)
         except Exception as exc:  # noqa: BLE001 - one dead list must not stop the run
-            print("  list unavailable (%s): %s" % (type(exc).__name__, url.split("?")[0].rsplit("/", 1)[-1]))
+            message = "list unavailable (%s): %s" % (type(exc).__name__, url.split("?")[0].rsplit("/", 1)[-1])
+            print("  " + message)
+            if report is not None:
+                report.setdefault("list_errors", []).append(message)
             continue
+        before = len(found)
         if kind == "geonode":
             try:
                 for item in json.loads(text).get("data", []):
@@ -228,15 +244,19 @@ def collect_proxy_candidates(client, limit=200):
                 if "socks" in text[line_start:match.end()].lower():
                     continue  # skip SOCKS entries: no PySocks in CI
                 add("%s:%s" % (match.group(1), match.group(2)))
-        if len(found) >= limit * 2:
+        if report is not None:
+            report.setdefault("lists", []).append({"source": url.split("?")[0], "found": len(found) - before})
+        if len(found) >= limit * 3:
             break
     return found[:limit]
 
 
-def discover_proxies(insecure, limit=200, workers=24, timeout=14):
+def discover_proxies(insecure, limit=250, workers=32, timeout=20, report=None):
     """Race free Iranian proxies against TSETMC; return the working ones, fastest first."""
     direct = HttpClient(insecure=insecure)
-    candidates = collect_proxy_candidates(direct, limit=limit)
+    candidates = collect_proxy_candidates(direct, limit=limit, report=report)
+    if report is not None:
+        report["candidates"] = len(candidates)
     if not candidates:
         print("  no proxy candidates collected")
         return []
@@ -245,8 +265,8 @@ def discover_proxies(insecure, limit=200, workers=24, timeout=14):
     def attempt(proxy):
         started = time.monotonic()
         try:
-            rows = probe_transport(HttpClient(proxy=proxy, insecure=insecure), timeout)
-            return (proxy, round(time.monotonic() - started, 1), rows)
+            probe_tiny(HttpClient(proxy=proxy, insecure=insecure), timeout)
+            return (proxy, round(time.monotonic() - started, 1))
         except Exception:  # noqa: BLE001 - dead proxies are expected
             return None
 
@@ -255,39 +275,59 @@ def discover_proxies(insecure, limit=200, workers=24, timeout=14):
         for result in pool.map(attempt, candidates):
             if result:
                 working.append(result)
-                print("  proxy ok: %s (%ss, %d instruments)" % (redact(result[0]), result[1], result[2]))
+                print("  proxy ok: %s (%ss)" % (redact(result[0]), result[1]))
     working.sort(key=lambda item: item[1])
+    if report is not None:
+        report["working"] = [{"proxy": item[0], "seconds": item[1]} for item in working]
+    print("  %d/%d proxies answered" % (len(working), len(candidates)))
     return [item[0] for item in working]
 
 
-def choose_transport(args):
+def choose_transport(args, report=None):
     """Direct first, then explicit proxies, then discovered Iranian proxies."""
     direct = HttpClient(insecure=args.insecure)
+
+    def note(kind, target, ok, detail):
+        print("%s %s: %s" % ("OK  " if ok else "FAIL", kind, detail))
+        if report is not None:
+            report.setdefault("attempts", []).append(
+                {"kind": kind, "target": redact(target), "ok": ok, "detail": detail}
+            )
+
     if not args.no_direct:
         try:
             rows = probe_transport(direct, args.probe_timeout)
-            print("Transport: direct connection (%d instruments)" % rows)
+            note("direct", "-", True, "%d instruments" % rows)
+            if report is not None:
+                report["transport"] = "direct"
             return direct, "direct"
         except Exception as exc:  # noqa: BLE001
-            print("Direct connection failed (%s)" % str(exc)[:120])
+            note("direct", "-", False, str(exc)[:140])
 
     for proxy in explicit_proxies(args):
         client = HttpClient(proxy=proxy, insecure=args.insecure)
         try:
             rows = probe_transport(client, args.probe_timeout)
-            print("Transport: configured proxy %s (%d instruments)" % (redact(proxy), rows))
+            note("configured", proxy, True, "%d instruments" % rows)
+            if report is not None:
+                report["transport"] = "proxy"
             return client, "proxy"
         except Exception as exc:  # noqa: BLE001
-            print("Configured proxy %s failed (%s)" % (redact(proxy), str(exc)[:100]))
+            note("configured", proxy, False, str(exc)[:120])
 
     if args.auto_proxy:
-        for proxy in discover_proxies(args.insecure, limit=args.proxy_candidates):
+        for proxy in discover_proxies(
+            args.insecure, limit=args.proxy_candidates, timeout=args.probe_timeout, report=report
+        ):
             client = HttpClient(proxy=proxy, insecure=args.insecure)
             try:
                 rows = probe_transport(client, args.probe_timeout)
-                print("Transport: discovered proxy %s (%d instruments)" % (redact(proxy), rows))
+                note("discovered", proxy, True, "%d instruments" % rows)
+                if report is not None:
+                    report["transport"] = "proxy"
                 return client, "proxy"
-            except Exception:  # noqa: BLE001 - try the next one
+            except Exception as exc:  # noqa: BLE001 - try the next one
+                note("discovered", proxy, False, str(exc)[:120])
                 continue
 
     raise SystemExit(
@@ -477,18 +517,41 @@ def main(argv=None):
     parser.add_argument(
         "--probe-timeout",
         type=int,
-        default=15,
-        help="seconds allowed for each transport probe (default 15)",
+        default=20,
+        help="seconds allowed for each transport probe (default 20)",
+    )
+    parser.add_argument(
+        "--report",
+        metavar="FILE",
+        help="write a JSON diagnostic report (transport, proxy race, timings)",
     )
     args = parser.parse_args(argv)
 
     bars = max(20, min(600, args.bars))
     seed_count = 0 if args.no_history else max(0, args.history)
+    report = {
+        "started": dt.datetime.now(TEHRAN_TZ).isoformat(timespec="seconds"),
+        "attempts": [],
+        "lists": [],
+    }
+
+    def write_report(status):
+        if not args.report:
+            return
+        report["status"] = status
+        report["finished"] = dt.datetime.now(TEHRAN_TZ).isoformat(timespec="seconds")
+        with open(args.report, "w", encoding="utf-8") as fh:
+            json.dump(report, fh, ensure_ascii=False, indent=1)
 
     started = time.monotonic()
-    client, transport = choose_transport(args)
+    try:
+        client, transport = choose_transport(args, report)
+    except SystemExit:
+        write_report("unreachable")
+        raise
     rows = client.get_json(market_url()).get("marketwatch") or []
     if not rows:
+        write_report("empty")
         raise SystemExit("TSETMC returned an empty market watch")
     buckets = build(rows)
 
@@ -507,6 +570,12 @@ def main(argv=None):
     }
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
+
+    report["transport"] = transport
+    report["counts"] = payload["counts"]
+    report["seeds"] = seeded
+    report["seconds"] = round(time.monotonic() - started, 1)
+    write_report("ok")
 
     print(
         "Wrote %s in %.1fs via %s: %s | history seeds=%d"
