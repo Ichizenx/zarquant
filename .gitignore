@@ -1,0 +1,10 @@
+# StatiCrypt output and local tooling — never commit these
+.staticrypt-build/
+decrypted/
+node_modules/
+.pnpm-store/
+*.log
+
+# OS noise
+.DS_Store
+Thumbs.db

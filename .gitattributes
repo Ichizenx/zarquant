@@ -1,0 +1,6 @@
+# Keep line endings identical on Windows and on the Linux runners, so that
+# StatiCrypt output (and every diff) stays byte-stable.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

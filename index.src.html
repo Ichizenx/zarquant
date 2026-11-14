@@ -1,11 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#131722">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="زارکوانت — داشبورد بازار سرمایه ایران با نمودار شمعی و واچ‌لیست سبک تریدینگ‌ویو">
 <title>Zarquant | زارکوانت</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23089981'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='38' font-weight='700' text-anchor='middle' fill='%23071a17'%3EZ%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23089981'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' font-weight='700' text-anchor='middle' fill='%23071a17'%3EZ%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
 <link rel="stylesheet" href="style.css">
@@ -15,63 +17,133 @@
 
   <header class="topbar">
     <div class="brand">
-      <div class="mark" aria-hidden="true">Z</div>
-      <div class="brand-text">
-        <h1>Zarquant <small>زارکوانت</small></h1>
-        <p>داشبورد بازار سرمایه</p>
-      </div>
+      <span class="mark" aria-hidden="true">Z</span>
+      <span class="brand-name">Zarquant</span>
+      <span class="brand-sub">زارکوانت</span>
     </div>
-    <div class="top-actions">
-      <span class="updated" id="updated">در حال بارگذاری…</span>
-      <button class="icon-btn" id="refresh" type="button" aria-label="بارگذاری مجدد" title="بارگذاری مجدد">⟳</button>
+
+    <div class="tf-tabs" role="group" aria-label="بازه زمانی نمودار">
+      <button type="button" class="tf is-active" data-tf="1D" aria-pressed="true">روزانه</button>
+      <button type="button" class="tf" data-tf="1W" aria-pressed="false">هفتگی</button>
+      <button type="button" class="tf" data-tf="1M" aria-pressed="false">ماهانه</button>
+    </div>
+
+    <div class="top-end">
+      <span class="sync" id="sync">در حال بارگذاری داده…</span>
+      <button type="button" class="icon-btn" id="refresh" title="به‌روزرسانی داده" aria-label="به‌روزرسانی داده">
+        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.2 6.2A5.4 5.4 0 1 0 13.4 9.6"/><path d="M13.4 2.6v3.8h-3.8"/>
+        </svg>
+      </button>
+      <button type="button" class="icon-btn wl-toggle" id="wlToggle" title="واچ‌لیست" aria-label="باز کردن واچ‌لیست">
+        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M2.5 4h11M2.5 8h11M2.5 12h7"/>
+        </svg>
+      </button>
     </div>
   </header>
 
   <main class="stage">
-    <section class="summary" id="summary" aria-label="خلاصه بازار"></section>
-
-    <section class="detail" id="detail">
-      <div class="detail-top">
-        <div class="detail-id">
-          <span class="detail-symbol" id="dSymbol">—</span>
-          <span class="detail-name" id="dName">یک نماد را از واچ‌لیست انتخاب کنید</span>
+    <section class="chart" id="chartPanel" aria-label="نمودار نماد انتخاب‌شده">
+      <div class="chart-head">
+        <div class="chart-title">
+          <div class="ct-line">
+            <h2 id="cSymbol">—</h2>
+            <span class="chip" id="cGroup" hidden></span>
+          </div>
+          <p class="ct-name" id="cName">یک نماد را از واچ‌لیست انتخاب کنید</p>
         </div>
-        <span class="detail-badge" id="dBadge">—</span>
+        <div class="chart-quote">
+          <span class="quote-price" id="cPrice">—</span>
+          <span class="quote-delta" id="cDelta">—</span>
+        </div>
       </div>
-      <div class="detail-price" id="dPrice">—</div>
-      <div class="detail-grid" id="dStats"></div>
+
+      <div class="chart-bar">
+        <div class="legend" id="cLegend" aria-live="off">
+          <span class="lg"><i>O</i><b id="lgO">—</b></span>
+          <span class="lg"><i>H</i><b id="lgH">—</b></span>
+          <span class="lg"><i>L</i><b id="lgL">—</b></span>
+          <span class="lg"><i>C</i><b id="lgC">—</b></span>
+          <span class="lg lg-chg" id="lgChg">—</span>
+        </div>
+        <div class="chart-tools">
+          <div class="seg" role="group" aria-label="نوع نمودار">
+            <button type="button" class="seg-btn is-active" data-mode="candles" aria-pressed="true" title="شمعی" aria-label="نمودار شمعی">
+              <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                <path d="M4.5 2.2v2.4M4.5 11.4v2.4M11.5 2.2v3.4M11.5 10.4v3.4"/>
+                <rect x="3" y="4.6" width="3" height="6.8" rx=".5"/><rect x="10" y="5.6" width="3" height="4.8" rx=".5"/>
+              </svg>
+            </button>
+            <button type="button" class="seg-btn" data-mode="line" aria-pressed="false" title="خطی" aria-label="نمودار خطی">
+              <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+                <path d="M2 11.6l3.6-4 3 2.4L14 4.4"/>
+              </svg>
+            </button>
+            <button type="button" class="seg-btn" data-mode="area" aria-pressed="false" title="سطحی" aria-label="نمودار سطحی">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M2 11.6l3.6-4 3 2.4L14 4.4V13H2z" fill="currentColor" opacity=".22"/>
+                <path d="M2 11.6l3.6-4 3 2.4L14 4.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <button type="button" class="icon-btn sm" id="resetView" title="بازنشانی نما" aria-label="بازنشانی نما">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 8a5 5 0 1 1 1.6 3.7"/><path d="M3 2.8v3.6h3.6"/>
+            </svg>
+          </button>
+          <button type="button" class="icon-btn sm" id="expand" title="تمام‌صفحه" aria-label="تمام‌صفحه">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2.5H2.5V6M10 2.5h3.5V6M6 13.5H2.5V10M10 13.5h3.5V10"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="chart-canvas" id="chartCanvas">
+        <canvas id="candles" role="img" aria-label="نمودار قیمت شمعی"></canvas>
+        <div class="chart-state" id="chartState" hidden>
+          <span class="cs-title" id="chartStateTitle"></span>
+          <span class="cs-sub" id="chartStateSub"></span>
+        </div>
+      </div>
+
+      <div class="chart-stats" id="cStats"></div>
     </section>
 
-    <section class="groups" id="groups" aria-label="خلاصه دسته‌ها"></section>
-
-    <section class="note">
-      داده‌ها از بازار TSETMC گرفته می‌شوند؛ برای دیدن جزئیات هر نماد روی آن در واچ‌لیست کلیک کنید.
-    </section>
+    <section class="pulse" id="pulse" aria-label="نبض بازار"></section>
   </main>
 
-  <aside class="watchlist" id="watchlist" aria-label="واچ‌لیست">
+  <aside class="watchlist" id="watchlist" aria-label="واچ‌لیست بازار">
     <div class="wl-head">
-      <span class="wl-title">واچ‌لیست</span>
-      <span class="wl-count" id="wlCount"></span>
-      <button class="wl-btn" id="collapseBtn" type="button" aria-label="جمع کردن واچ‌لیست" title="جمع کردن">›</button>
+      <h2>واچ‌لیست</h2>
+      <span class="wl-count" id="wlCount">—</span>
+      <button type="button" class="icon-btn sm wl-close" id="wlClose" aria-label="بستن واچ‌لیست" title="بستن">
+        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M4 4l8 8M12 4l-8 8"/>
+        </svg>
+      </button>
     </div>
 
-    <div class="wl-search">
-      <span aria-hidden="true">⌕</span>
-      <input id="search" type="search" placeholder="جستجوی نماد یا نام شرکت…" autocomplete="off" spellcheck="false">
-    </div>
+    <label class="wl-search">
+      <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="7" cy="7" r="4.2"/><path d="M10.2 10.2L13.5 13.5"/>
+      </svg>
+      <input id="search" type="search" placeholder="جستجوی نماد یا نام شرکت…" autocomplete="off" spellcheck="false" aria-label="جستجوی نماد">
+    </label>
 
     <div class="wl-cols" aria-hidden="true">
-      <span>نماد</span><span>آخرین</span><span>تغییر</span><span>تغییر ٪</span>
+      <span>نماد</span><span>آخرین</span><span>تغییر</span><span>٪</span>
     </div>
 
     <div class="wl-body" id="wlBody"></div>
-    <p class="wl-empty" id="wlEmpty" hidden>نمادی پیدا نشد.</p>
+    <p class="wl-empty" id="wlEmpty" hidden>نمادی با این جستجو پیدا نشد.</p>
   </aside>
 
-  <button class="wl-open" id="openBtn" type="button" hidden aria-label="باز کردن واچ‌لیست">‹ واچ‌لیست</button>
+  <div class="scrim" id="scrim" hidden></div>
 </div>
 
+<script src="chart.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

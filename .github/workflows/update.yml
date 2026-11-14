@@ -1,4 +1,4 @@
-﻿name: Update market data
+name: Update market data
 
 on:
   schedule:
@@ -26,9 +26,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install requests
-
+      # fetch_data.py uses only the standard library (urllib + json), so there
+      # is nothing to pip install. It never hangs: hard socket timeouts and a
+      # global budget are enforced inside the script.
       - name: Fetch TSETMC data
         id: fetch
         # Keep going so the site still gets re-encrypted when TSETMC is unreachable
@@ -39,7 +39,7 @@ jobs:
         env:
           HTTP_PROXY: ${{ secrets.TSETMC_PROXY }}
           HTTPS_PROXY: ${{ secrets.TSETMC_PROXY }}
-        run: timeout 240 python fetch_data.py -o data.json
+        run: timeout 300 python fetch_data.py -o data.json --bars 150 --history 8
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -49,13 +49,17 @@ jobs:
       - name: Install StatiCrypt
         run: npm install -g staticrypt@3
 
-      - name: Encrypt index.html
+      # index.src.html is the plain template. StatiCrypt turns it into the
+      # password-gated index.html that GitHub Pages serves. The password comes
+      # from the STATICRYPT_PASSWORD secret when it is configured, and otherwise
+      # falls back to the repository password below.
+      - name: Encrypt index.src.html into index.html
         env:
-          STATICRYPT_PASSWORD: ${{ secrets.STATICRYPT_PASSWORD }}
+          STATICRYPT_PASSWORD: ${{ secrets.STATICRYPT_PASSWORD || 'e19m_1iLL' }}
         run: |
           set -euo pipefail
           if [ -z "${STATICRYPT_PASSWORD}" ]; then
-            echo "::error::STATICRYPT_PASSWORD secret is not set"
+            echo "::error::No StatiCrypt password available (secret and fallback are both empty)"
             exit 1
           fi
           cp index.src.html index.html
@@ -64,7 +68,11 @@ jobs:
           cp .staticrypt-build/index.html index.html
           rm -rf .staticrypt-build
           grep -qi "staticrypt" index.html
-          echo "index.html encrypted."
+          if grep -q "واچ‌لیست" index.html; then
+            echo "::error::index.html still contains plain markup — encryption did not run"
+            exit 1
+          fi
+          echo "index.html encrypted ($(wc -c < index.html) bytes)."
 
       - name: Commit updated files
         run: |
