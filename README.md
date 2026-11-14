@@ -52,9 +52,12 @@ python -m http.server 8765 --bind 127.0.0.1
 ```powershell
 python fetch_data.py -o data.json            # 150 candles, 8 seeds per group
 python fetch_data.py --history 0             # market watch only
+python fetch_data.py --auto-proxy            # discover a free Iranian proxy if blocked
+python fetch_data.py --proxy http://host:port  # pin one proxy (repeatable)
 python fetch_data.py --insecure              # networks with a TLS-inspecting proxy
 ```
 
-TSETMC geo-blocks many non-Iranian networks, so the scheduled job may fail at the
-fetch step; the site keeps serving the last committed `data.json` and the encrypted
-page is still rebuilt. See `PROJECT_NOTES.md` for the details.
+TSETMC geo-blocks most non-Iranian networks, including GitHub-hosted runners, so the
+scheduled job runs with `--auto-proxy`: it races free Iranian HTTP proxies against the
+live endpoint and continues through the first one that answers. Pin a stable proxy with
+the `TSETMC_PROXY` secret to skip discovery. See `PROJECT_NOTES.md` §4.2 for details.

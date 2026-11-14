@@ -16,7 +16,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -27,19 +27,22 @@ jobs:
           python-version: "3.11"
 
       # fetch_data.py uses only the standard library (urllib + json), so there
-      # is nothing to pip install. It never hangs: hard socket timeouts and a
-      # global budget are enforced inside the script.
+      # is nothing to pip install.
+      #
+      # TSETMC drops connections from most non-Iranian networks, which is why a
+      # GitHub-hosted runner cannot reach it directly. `--auto-proxy` makes the
+      # script race free Iranian HTTP proxies against the real endpoint and
+      # continue through the first one that answers; the proxy is also reused
+      # for the daily history seeds. Set the optional TSETMC_PROXY secret to pin
+      # a stable (paid) proxy and skip discovery entirely.
       - name: Fetch TSETMC data
         id: fetch
         # Keep going so the site still gets re-encrypted when TSETMC is unreachable
         # from the runner; the job is failed explicitly at the end.
         continue-on-error: true
-        # TSETMC rejects many non-Iranian networks; set the TSETMC_PROXY secret
-        # to an HTTP proxy if the runner cannot reach cdn.tsetmc.com directly.
         env:
-          HTTP_PROXY: ${{ secrets.TSETMC_PROXY }}
-          HTTPS_PROXY: ${{ secrets.TSETMC_PROXY }}
-        run: timeout 300 python fetch_data.py -o data.json --bars 150 --history 8
+          TSETMC_PROXY: ${{ secrets.TSETMC_PROXY }}
+        run: timeout 900 python fetch_data.py -o data.json --bars 150 --history 8 --auto-proxy
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

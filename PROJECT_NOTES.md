@@ -73,6 +73,23 @@ Standard library only (`urllib`, `json`, `gzip`, `concurrent.futures`) — CI ne
 * **Hardening:** `socket.setdefaulttimeout(20)`, 3 attempts with backoff, per-call budget,
   `Accept-Encoding: gzip`, and a `--insecure` flag for networks behind a TLS-inspecting proxy
   (never use it in CI).
+* **Geo-blocking / transport selection** — TSETMC drops connections from most non-Iranian
+  networks, so a GitHub runner cannot reach `cdn.tsetmc.com` directly (verified: 30 s connect
+  timeouts from `ubuntu-latest`). `choose_transport()` resolves this at runtime:
+
+  | Order | Attempt | Notes |
+  | --- | --- | --- |
+  | 1 | direct connection | kept for local runs and for runners that can reach TSETMC |
+  | 2 | explicit proxies | `--proxy URL` (repeatable) and `TSETMC_PROXY` / `HTTP_PROXY` / `HTTPS_PROXY` |
+  | 3 | discovered proxies | only with `--auto-proxy`: free Iranian HTTP proxies from `PROXY_SOURCES`, raced in parallel |
+
+  Discovery collects up to `--proxy-candidates` (default 200) addresses from six public
+  Iranian proxy lists, races them with 24 threads against the *real* market-watch endpoint,
+  and keeps those returning a non-empty `marketwatch` payload (fastest first). The winning
+  transport is reused for the history seeds. Free proxies live for hours, so they are never
+  hardcoded — a proxy that worked on one run is usually dead on the next (observed: the two
+  proxies found at 10:19 UTC were both gone by 10:40). If every transport fails, the script
+  exits non-zero with a clear message and `data.json` is left untouched.
 * **Classification** (checked in this order) uses the codes carried in each row (`flow`, `csv`)
   plus name keywords:
 
@@ -215,12 +232,14 @@ URLs: site → `https://ichizenx.github.io/zarquant/`, data → `…/data.json`.
 
 * Triggers: `schedule` cron `"30 14 * * *"` (14:30 UTC = **18:00 Tehran**) and
   `workflow_dispatch`.
-* Permissions `contents: write`; concurrency group `update-market-data`; `timeout-minutes: 15`.
-* Steps: checkout → Python 3.11 → `timeout 300 python fetch_data.py -o data.json --bars 150
-  --history 8` → Node 20 → `npm install -g staticrypt@3` → encrypt → commit `data.json` +
-  `index.html` → fail the job if the fetch step failed (the encryption still runs).
-* Secrets: optional `TSETMC_PROXY` (HTTP proxy for the fetch step) and optional
+* Permissions `contents: write`; concurrency group `update-market-data`; `timeout-minutes: 30`.
+* Steps: checkout → Python 3.11 → `timeout 900 python fetch_data.py -o data.json --bars 150
+  --history 8 --auto-proxy` → Node 20 → `npm install -g staticrypt@3` → encrypt → commit
+  `data.json` + `index.html` → fail the job if the fetch step failed (encryption still runs).
+* Secrets: optional `TSETMC_PROXY` (pins one stable proxy and skips discovery) and optional
   `STATICRYPT_PASSWORD` (overrides the built-in password).
+* Typical duration once a proxy is found: ~3–5 min (proxy race ~1–2 min, market watch ~10 s,
+  32 history seeds ~1 min, encryption ~20 s).
 
 ### 4.1 Password protection (StatiCrypt)
 
@@ -258,14 +277,37 @@ Limitations to remember:
 * Round-trip check (proves the ciphertext is valid): `staticrypt index.html --decrypt -p … `
   must reproduce `index.src.html` byte for byte.
 
-### ⚠️ Known limitation — TSETMC geo-blocking
+### 4.2 TSETMC geo-blocking — how CI works around it
 
-GitHub-hosted runners execute in the United States; TSETMC frequently refuses or drops requests
-from non-Iranian networks, so the scheduled job can fail at the "Fetch TSETMC data" step. The
-site does not break (it keeps the last `data.json` and is still re-encrypted), it just goes
-stale. Fixes: set the `TSETMC_PROXY` secret, run `fetch_data.py` from an Iranian connection, or
-use a self-hosted runner. This machine (Iran) reaches the API in ~10 s; the network here
-intercepts TLS with a self-signed chain, hence `--insecure` for local runs.
+GitHub-hosted runners run outside Iran and TSETMC silently drops their connections (measured on
+`ubuntu-latest`: connect timeout after 30 s for `cdn.tsetmc.com`, `www.tsetmc.com` and
+`old.tsetmc.com` alike). Public CORS/reader relays do **not** help — they are refused by TSETMC
+too (`allorigins` 408, `codetabs` 522, `jina` 422, `corsproxy` 401/needs a key).
+
+The working solution is Option A: `--auto-proxy`.
+
+1. The script first tries a direct connection (fast on an Iranian machine).
+2. Then any explicitly configured proxy (`TSETMC_PROXY` secret, `--proxy`, `HTTP(S)_PROXY`).
+3. Then, with `--auto-proxy`, it collects free Iranian HTTP proxies from `PROXY_SOURCES`
+   (proxifly IR lists, ProxyScrape IR, Geonode IR, proxy-list.download IR), races up to 200 of
+   them against the live market-watch endpoint and continues through the fastest one that
+   returns real instruments.
+
+Caveats to keep in mind:
+
+* Free proxies are **ephemeral** (observed lifetime: hours). Discovery therefore runs on every
+  scheduled execution; do not hardcode addresses.
+* The proxy is also used for the history seeds, so a slow proxy makes the run take longer.
+  Seeds are best-effort: if the proxy dies mid-run, `data.json` is still written without them
+  and the browser fetches history on demand.
+* Success is not guaranteed every day — free lists sometimes contain no live Iranian proxy.
+  That is why the job keeps `continue-on-error` on the fetch and still re-encrypts the site.
+  For guaranteed freshness pin a paid Iranian proxy in `TSETMC_PROXY`, or use a self-hosted
+  runner inside Iran.
+* `--insecure` exists only for this development machine, whose network intercepts TLS with a
+  self-signed chain. Never add it to CI.
+* Verify a run with: `gh run list --repo Ichizenx/zarquant` and check that the bot commit moved
+  `data.json`'s `updated` timestamp forward.
 
 ---
 
@@ -345,6 +387,9 @@ git -C <repo> push origin main
 * Keep `data.json` deterministic in structure; the frontend assumes every category exists
   (even if empty). An empty group is legitimate on holidays.
 * Newly listed symbols report enormous `ch`; the "best gainer" card ignores moves above 100 %.
+* Networking lives in `HttpClient` + `choose_transport()`. Do not bypass them: they own proxy
+  selection, retries and the gzip handling. `PROXY_SOURCES` is the place to add new proxy lists;
+  SOCKS entries are skipped on purpose (the script stays standard-library only).
 
 ### 5.6 Constraints and gotchas
 
@@ -354,7 +399,9 @@ git -C <repo> push origin main
   the chart's last candle is the previous day while the header shows the live quote. That is
   why the chart draws the blue live-price line and the footer shows `کندل آخر`.
 * `sessionStorage` history cache is per tab; it is capped by browser quota, failures are silent.
-* Automated refreshes only work where TSETMC is reachable (see §4).
+* Automated refreshes depend on a reachable transport: direct, a pinned `TSETMC_PROXY`, or a
+  discovered free Iranian proxy (see §4.2). Free proxies are unreliable by nature — a red run
+  means no proxy answered that day, not that the pipeline is broken.
 
 ---
 
@@ -365,5 +412,7 @@ git -C <repo> push origin main
 3. Serve over HTTP and screenshot before/after any UI change (desktop + narrow).
 4. Run a smoke test for clicks, timeframes, chart modes, search and zoom.
 5. Commit only the intended paths; push to `main`; verify the Pages URL after ~1 minute.
-6. If the daily refresh matters, check the last Actions run, `TSETMC_PROXY` and the
-   `STATICRYPT_PASSWORD` secret.
+6. If the daily refresh matters, check the last Actions run: the fetch step must report a
+   `Transport:` line (direct / configured proxy / discovered proxy) and the bot commit must move
+   `data.json`'s `updated` timestamp forward. Also check `TSETMC_PROXY` and
+   `STATICRYPT_PASSWORD`.
