@@ -1,0 +1,87 @@
+{
+ "started": "2026-11-14T10:19:31Z",
+ "direct": {
+  "error": "ConnectTimeout: HTTPSConnectionPool(host='cdn.tsetmc.com', port=443): Max retries exceeded with url: /api/ClosingPrice/GetMarketWatch?market=0&paperTypes%5B",
+  "seconds": 30.3
+ },
+ "relays": {
+  "allorigins": {
+   "status": 408,
+   "bytes": 24,
+   "rows": null,
+   "seconds": 7.7,
+   "head": "Oops... Request Timeout."
+  },
+  "codetabs": {
+   "status": 522,
+   "bytes": 977,
+   "rows": 0,
+   "seconds": 19.6,
+   "head": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-522/\",\""
+  },
+  "corsproxy": {
+   "status": 401,
+   "bytes": 81,
+   "rows": 0,
+   "seconds": 0.2,
+   "head": "{\"error\":\"A valid API key is required. Get one at https://console.corsproxy.io/\"}"
+  },
+  "jina": {
+   "status": 422,
+   "bytes": 933,
+   "rows": 0,
+   "seconds": 18.6,
+   "head": "{\"data\":null,\"cause\":{\"log\":[\"  - navigating to \\\"https://cdn.tsetmc.com/api/ClosingPrice/GetMarketWatch?market=0&paperT"
+  },
+  "thingproxy": {
+   "error": "ConnectionError: HTTPSConnectionPool(host='thingproxy.freeboard.io', port=443): Max retries exceeded with url: /fetch/https://cdn.tsetmc.com/api/ClosingPrice",
+   "seconds": 0.2
+  },
+  "corseu": {
+   "status": 429,
+   "bytes": 20,
+   "rows": null,
+   "seconds": 0.5,
+   "head": "Rate limit exceeded "
+  }
+ },
+ "proxies": {
+  "tested": 160,
+  "working": [
+   {
+    "status": 200,
+    "bytes": 1500183,
+    "rows": 2181,
+    "seconds": 6.2,
+    "head": "{\"marketwatch\":[{\"lva\":\"ضهرم8024\",\"lvc\":\"اختيارخ اهرم-30000-1405/08/27\",\"eps\":0.0,\"pe\":null,\"pmd\":55011.0,\"pmo\":59000.0,",
+    "proxy": "195.181.40.34:8080",
+    "proto": "http"
+   },
+   {
+    "status": 200,
+    "bytes": 1500184,
+    "rows": 2181,
+    "seconds": 15.2,
+    "head": "{\"marketwatch\":[{\"lva\":\"تصميم\",\"lvc\":\"صندوق س با درآمد ثابت تصميم\",\"eps\":0.0,\"pe\":null,\"pmd\":64123.0,\"pmo\":64124.0,\"qtj\"",
+    "proxy": "81.90.144.170:9000",
+    "proto": "http"
+   }
+  ]
+ },
+ "direct_variants": {
+  "www.tsetmc.com": {
+   "error": "ConnectTimeout: HTTPSConnectionPool(host='www.tsetmc.com', port=443): Max retries exceeded with url: /api/ClosingPrice/GetMarketWatch?market=0&showTraded=tr",
+   "seconds": 30.5
+  },
+  "cdn http": {
+   "error": "ConnectTimeout: HTTPConnectionPool(host='cdn.tsetmc.com', port=80): Max retries exceeded with url: /api/ClosingPrice/GetMarketWatch?market=0&paperTypes%5B0%",
+   "seconds": 30.6
+  },
+  "old.tsetmc.com": {
+   "error": "ConnectTimeout: HTTPSConnectionPool(host='old.tsetmc.com', port=443): Max retries exceeded with url: /tsev2/data/MarketWatchPlus.aspx (Caused by ConnectTime",
+   "seconds": 20.5
+  }
+ },
+ "collected": 497,
+ "finished": "2026-11-14T10:22:50Z"
+}
