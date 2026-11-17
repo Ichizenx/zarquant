@@ -102,6 +102,57 @@
 
       <div class="chart-canvas" id="chartCanvas">
         <canvas id="candles" role="img" aria-label="نمودار قیمت شمعی"></canvas>
+        <canvas id="drawCanvas" class="draw-overlay" aria-hidden="true"></canvas>
+        <aside class="draw-toolbar" id="drawToolbar" aria-label="ابزارهای رسم روی نمودار">
+          <button type="button" class="d-btn is-active" data-mode="crosshair" aria-pressed="true" title="کراس‌هر (Crosshair)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v12M2 8h12"/><circle cx="8" cy="8" r="1"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="trendline" id="dTrendline" aria-pressed="false" aria-haspopup="true" title="خط روند (Trend Line)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l7-7"/><circle cx="3" cy="13" r="0.7"/><circle cx="10" cy="6" r="0.7"/></svg>
+          </button>
+          <div class="d-menu" id="dMenu" hidden role="menu">
+            <button type="button" class="d-menu-item" data-mode="trendline" role="menuitem"><span>خط روند</span><span class="d-star" data-fav="trendline">☆</span></button>
+            <button type="button" class="d-menu-item" data-mode="trendangle" role="menuitem"><span>زاویه خط روند</span><span class="d-star" data-fav="trendangle">☆</span></button>
+            <button type="button" class="d-menu-item" data-mode="horizline" role="menuitem"><span>خط افقی</span><span class="d-star" data-fav="horizline">☆</span></button>
+            <button type="button" class="d-menu-item" data-mode="horizray" role="menuitem"><span>شعاع افقی</span><span class="d-star" data-fav="horizray">☆</span></button>
+            <button type="button" class="d-menu-item" data-mode="vertline" role="menuitem"><span>خط عمودی</span><span class="d-star" data-fav="vertline">☆</span></button>
+            <button type="button" class="d-menu-item" data-mode="arrow" role="menuitem"><span>فلش</span><span class="d-star" data-fav="arrow">☆</span></button>
+            <button type="button" class="d-menu-item" data-mode="ray" role="menuitem"><span>شعاع</span><span class="d-star" data-fav="ray">☆</span></button>
+            <button type="button" class="d-menu-item" data-mode="extendedline" role="menuitem"><span>خط گسترده</span><span class="d-star" data-fav="extendedline">☆</span></button>
+            <button type="button" class="d-menu-item" data-mode="parallelchannel" role="menuitem"><span>کانال مساوی</span><span class="d-star" data-fav="parallelchannel">☆</span></button>
+            <button type="button" class="d-menu-item" data-mode="flattopbottom" role="menuitem"><span>سقف/کف مسطح</span><span class="d-star" data-fav="flattopbottom">☆</span></button>
+          </div>
+          <button type="button" class="d-btn" data-mode="fibonacci" title="فایبوناچی (Fibonacci)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h12M3 8h9M4 12h5"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="brush" title="براش (Brush)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 11 9M11 9 13 7M11 9 9 11M5 3 3 5"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="text" title="متن (Text)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4h4M5 8h2M4 12h4"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="patterns" title="الگوها (Patterns)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="4" height="4" fill="currentColor" opacity=".6"/><rect x="8" y="8" width="4" height="4" fill="currentColor" opacity=".6"/><rect x="8" y="4" width="4" height="4" fill="none"/><rect x="4" y="8" width="4" height="4" fill="none"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="prediction" title="پیش‌بینی (Prediction)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12l6-5 4 4M8 7l2-2M8 7l-2-2"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="ruler" title="خط‌سنج (Ruler)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 8h12M4 6v4M8 6v4M12 6v4"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="zoom" title="بزرگ‌نمایی / کوچک‌نمایی (Zoom)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="5" r="3"/><path d="M14 8 16 10M11 3v4M9 5h4"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="magnet" title="مقناطیس (Magnet)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v8a2 2 0 0 0 4 0V4zM8 6h3M8 10h3"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="lock" title="قفل (Lock)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="8" height="6" rx="2"/><path d="M8 10V6a2 2 0 0 1 4 0v4z"/><circle cx="8" cy="9" r="0.5" fill="currentColor"/></svg>
+          </button>
+          <button type="button" class="d-btn" data-mode="hide" title="مخفی (Hide)">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c2-2 6-2 8 0s2 2 4 0M2 12c2 2 6 2 8 0s2-2 4 0M14 4 4 14"/><circle cx="8" cy="10" r="0.7" fill="currentColor"/></svg>
+          </button>
+        </aside>
         <div class="chart-state" id="chartState" hidden>
           <span class="cs-title" id="chartStateTitle"></span>
           <span class="cs-sub" id="chartStateSub"></span>
@@ -132,8 +183,12 @@
       <input id="search" type="search" placeholder="جستجوی نماد یا نام شرکت…" autocomplete="off" spellcheck="false" aria-label="جستجوی نماد">
     </label>
 
-    <div class="wl-cols" aria-hidden="true">
-      <span>نماد</span><span>آخرین</span><span>تغییر</span><span>٪</span>
+    <div class="wl-cols">
+      <button type="button" class="wl-col-sort" data-key="s" aria-sort="none">نماد <span class="wl-sort-arrow"></span></button>
+      <span>آخرین قیمت</span>
+      <span>قیمت پایانی</span>
+      <span>حجم</span>
+      <button type="button" class="wl-col-sort" data-key="ch" aria-sort="none">تغییر % <span class="wl-sort-arrow"></span></button>
     </div>
 
     <div class="wl-body" id="wlBody"></div>

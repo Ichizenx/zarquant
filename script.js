@@ -44,6 +44,10 @@
     mode: "candles",
     seq: 0,
     series: [],
+    drawMode: null,
+    drawings: [],
+    favorites: {},
+    sort: { key: null, dir: "asc" },
   };
 
   var histCache = new Map();
@@ -81,6 +85,11 @@
     resetView: $("#resetView"),
     expand: $("#expand"),
     canvas: $("#candles"),
+    drawToolbar: $("#drawToolbar"),
+    drawCanvas: $("#drawCanvas"),
+    dMenu: $("#dMenu"),
+    dTrendline: $("#dTrendline"),
+    wlCols: $(".wl-cols"),
   };
 
   /* ---------------------------------------------------------------- utils */
@@ -219,6 +228,15 @@
   var chart = window.ZChart.mount(el.canvas, {
     onHover: function (bar) { renderLegend(bar); },
     onLeave: function () { renderLegend(state.series[state.series.length - 1] || null); },
+    pointerBlocked: function () { return state.drawMode !== null && state.drawMode !== "crosshair"; },
+    onResize: function (W, H, dpr) {
+      var c = el.drawCanvas;
+      c.width = Math.round(W * dpr);
+      c.height = Math.round(H * dpr);
+      var ctx = c.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      renderDrawings();
+    },
   });
 
   function applySeries(bars, reset) {
@@ -372,6 +390,8 @@
     if (!item) return;
     state.selected = { cat: cat, index: index };
     var token = ++state.seq;
+    state.drawings = [];
+    chart.setDrawings([]);
 
     renderDetail(item);
     markSelected();
@@ -412,13 +432,22 @@
   function filtered(cat) {
     var items = (state.data && state.data.categories[cat.key]) || [];
     var q = normalize(state.query);
-    if (!q) return items.map(function (item, index) { return { item: item, index: index }; });
     var out = [];
     for (var i = 0; i < items.length; i += 1) {
       var item = items[i];
-      if (normalize(item.s).indexOf(q) >= 0 || normalize(item.n).indexOf(q) >= 0) {
+      if (!q || normalize(item.s).indexOf(q) >= 0 || normalize(item.n).indexOf(q) >= 0) {
         out.push({ item: item, index: i });
       }
+    }
+    if (state.sort.key) {
+      var asc = state.sort.dir === "asc";
+      out.sort(function (a, b) {
+        var av = state.sort.key === "ch" ? (a.item.ch || 0) : normalize(a.item.s);
+        var bv = state.sort.key === "ch" ? (b.item.ch || 0) : normalize(b.item.s);
+        if (av < bv) return asc ? -1 : 1;
+        if (av > bv) return asc ? 1 : -1;
+        return 0;
+      });
     }
     return out;
   }
@@ -430,7 +459,8 @@
       '" data-sym="' + escapeHtml(item.s) + '" title="' + escapeHtml(item.n) + '">' +
       '<span class="sym">' + escapeHtml(item.s) + "</span>" +
       '<span class="last">' + priceText(item.p) + "</span>" +
-      '<span class="chg ' + cls + '">' + signed(deltaOf(item)) + "</span>" +
+      '<span class="close">' + priceText(item.c) + "</span>" +
+      '<span class="vol">' + window.ZChart.fmtVolume(item.v) + "</span>" +
       '<span class="pct ' + cls + '">' + signedPct(item.ch) + "</span>" +
       "</button>"
     );
@@ -468,6 +498,152 @@
     el.count.textContent = nf.format(shown);
     el.empty.hidden = shown !== 0;
     markSelected();
+    renderSortArrows();
+  }
+
+  function renderSortArrows() {
+    document.querySelectorAll(".wl-col-sort").forEach(function (btn) {
+      var active = state.sort.key === btn.dataset.key;
+      btn.setAttribute("aria-sort", active ? state.sort.dir : "none");
+      var arrow = btn.querySelector(".wl-sort-arrow");
+      if (arrow) arrow.textContent = active ? (state.sort.dir === "asc" ? "▲" : "▼") : "";
+    });
+  }
+
+  /* ------------------------------------------------------------- drawing toolbar */
+  function setDrawMode(mode) {
+    cancelDrag();
+    state.drawMode = mode;
+    document.querySelectorAll(".d-btn").forEach(function (b) {
+      var on = b.dataset.mode === mode;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    closeDrawMenu();
+    el.drawCanvas.style.pointerEvents = mode && mode !== "crosshair" ? "auto" : "none";
+  }
+  function openDrawMenu() {
+    var rect = el.dTrendline.getBoundingClientRect();
+    var m = el.dMenu;
+    m.style.left = Math.floor(rect.right + 6) + "px";
+    m.style.top = Math.floor(rect.top) + "px";
+    m.hidden = false;
+    renderDrawMenu();
+  }
+  function closeDrawMenu() { el.dMenu.hidden = true; }
+  function renderDrawMenu() {
+    var items = [
+      { mode: "trendline", label: "خط روند" },
+      { mode: "trendangle", label: "زاویه خط روند" },
+      { mode: "horizline", label: "خط افقی" },
+      { mode: "horizray", label: "شعاع افقی" },
+      { mode: "vertline", label: "خط عمودی" },
+      { mode: "arrow", label: "فلش" },
+      { mode: "ray", label: "شعاع" },
+      { mode: "extendedline", label: "خط پیموده" },
+      { mode: "parallelchannel", label: "کانال مساوی" },
+      { mode: "flattopbottom", label: "سقف/کف مسطح" },
+    ];
+    el.dMenu.innerHTML = items.map(function (it) {
+      var on = state.drawMode === it.mode;
+      var star = state.favorites[it.mode] ? "★" : "☆";
+      return (
+        '<button type="button" class="d-menu-item' + (on ? " is-active" : "") +
+        '" data-mode="' + it.mode + '"><span>' + escapeHtml(it.label) +
+        '</span><span class="d-star" data-fav="' + escapeHtml(it.mode) + '">' + star + "</span></button>"
+      );
+    }).join("");
+  }
+
+  function overlayPoint(evt) {
+    var rect = el.drawCanvas.getBoundingClientRect();
+    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+  }
+  function chartCoordOf(pt) {
+    return { i: chart.coordinateToIndex(pt.x), price: chart.coordinateToPrice(pt.y) };
+  }
+  function addDrawing(d) {
+    d.id = Date.now() + Math.random();
+    d.color = d.color || "#2962ff";
+    state.drawings.push(d);
+    renderDrawings();
+  }
+  function renderDrawings() {
+    var c = el.drawCanvas;
+    var ctx = c.getContext("2d");
+    var W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    if (!state.series.length) return;
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (var k = 0; k < state.drawings.length; k += 1) {
+      var d = state.drawings[k];
+      if (!isFinite(d.i1) || !isFinite(d.i2)) continue;
+      var x1 = chart.indexToCoordinate(d.i1);
+      var y1 = chart.priceToCoordinate(d.p1);
+      var x2 = chart.indexToCoordinate(d.i2);
+      var y2 = chart.priceToCoordinate(d.p2);
+      if (!isFinite(x1) || !isFinite(y1) || !isFinite(x2) || !isFinite(y2)) continue;
+      ctx.strokeStyle = d.color || "#2962ff";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash(d.dash || []);
+      ctx.beginPath();
+      if (d.type === "horizline") {
+        ctx.moveTo(0, y1);
+        ctx.lineTo(W, y1);
+      } else if (d.type === "vertline") {
+        ctx.moveTo(x1, 0);
+        ctx.lineTo(x1, H);
+      } else {
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+      }
+      ctx.stroke();
+    }
+    if (state.drag && state.drawMode === "trendline" && state.series.length && isFinite(state.drag.endI)) {
+      var x1 = chart.indexToCoordinate(state.drag.startI);
+      var y1 = chart.priceToCoordinate(state.drag.startP);
+      var x2 = chart.indexToCoordinate(state.drag.endI);
+      var y2 = chart.priceToCoordinate(state.drag.endP);
+      if (isFinite(x1) && isFinite(y1) && isFinite(x2) && isFinite(y2)) {
+        ctx.strokeStyle = "#2962ff";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+  function commitTempDrawing() {
+    if (!state.drag || state.series.length === 0) return;
+    var s = chartCoordOf(state.drag.start);
+    var c = chartCoordOf(state.drag.current);
+    if (isFinite(s.price) && isFinite(c.price)) {
+      state.drag.endI = c.i;
+      state.drag.endP = c.price;
+    }
+    renderDrawings();
+  }
+  function finalizeDrag() {
+    if (!state.drag) return;
+    var c = chartCoordOf(state.drag.current);
+    if (isFinite(c.price)) {
+      state.drawings.push({
+        type: "trendline",
+        i1: state.drag.startI, p1: state.drag.startP,
+        i2: c.i, p2: c.price, color: "#2962ff"
+      });
+    }
+    renderDrawings();
+    state.drag = null;
+  }
+  function cancelDrag() {
+    if (!state.drag) return;
+    state.drag = null;
+    renderDrawings();
   }
 
   /* ------------------------------------------------------------- pulse */
@@ -575,6 +751,90 @@
     if (row && row.dataset.index) {
       selectRow(row.dataset.cat, Number(row.dataset.index));
     }
+  });
+
+  /* ------------------------------------------------------------- drawing toolbar events */
+  el.drawToolbar.addEventListener("click", function (event) {
+    var btn = event.target.closest(".d-btn");
+    if (!btn) return;
+    if (btn.id === "dTrendline") {
+      event.stopPropagation();
+      if (!el.dMenu.hidden) { closeDrawMenu(); return; }
+      setDrawMode("trendline");
+      openDrawMenu();
+      return;
+    }
+    closeDrawMenu();
+    setDrawMode(btn.dataset.mode);
+  });
+
+  el.dMenu.addEventListener("click", function (event) {
+    var item = event.target.closest(".d-menu-item");
+    if (item) {
+      setDrawMode(item.dataset.mode);
+      return;
+    }
+    var star = event.target.closest(".d-star");
+    if (star) {
+      event.stopPropagation();
+      var key = star.dataset.fav;
+      state.favorites[key] = !state.favorites[key];
+      renderDrawMenu();
+      return;
+    }
+    closeDrawMenu();
+  });
+
+  document.addEventListener("click", function (event) {
+    if (!el.dMenu.hidden && !el.drawToolbar.contains(event.target) && !el.dMenu.contains(event.target)) {
+      closeDrawMenu();
+    }
+  });
+
+  el.drawCanvas.addEventListener("mousedown", function (event) {
+    if (state.drawMode === null || state.drawMode === "crosshair") return;
+    if (state.series.length === 0) return;
+    var pt = overlayPoint(event);
+    if (state.drawMode === "trendline") {
+      var s = chartCoordOf(pt);
+      if (!isFinite(s.price)) return;
+      state.drag = { start: pt, current: pt, startI: s.i, startP: s.price };
+      commitTempDrawing();
+      return;
+    }
+    if (state.drawMode === "horizline") {
+      var price = chart.coordinateToPrice(pt.y);
+      if (!isFinite(price)) return;
+      addDrawing({ type: "horizline", i1: 0, i2: 0, p1: price, p2: price });
+      return;
+    }
+    if (state.drawMode === "vertline") {
+      var i = chart.coordinateToIndex(pt.x);
+      addDrawing({ type: "vertline", i1: i, i2: i, p1: 0, p2: 0 });
+      return;
+    }
+  });
+
+  el.drawCanvas.addEventListener("mousemove", function (event) {
+    if (!state.drag) return;
+    state.drag.current = overlayPoint(event);
+    commitTempDrawing();
+  });
+  el.drawCanvas.addEventListener("mouseleave", cancelDrag);
+  window.addEventListener("mouseup", finalizeDrag);
+
+  el.wlCols.addEventListener("click", function (event) {
+    var btn = event.target.closest(".wl-col-sort");
+    if (!btn) return;
+    var key = btn.dataset.key;
+    if (state.sort.key === key) {
+      state.sort.dir = state.sort.dir === "asc" ? "desc" : "asc";
+    } else {
+      state.sort.key = key;
+      state.sort.dir = "asc";
+    }
+    renderSortArrows();
+    renderWatchlist();
   });
 
   var searchTimer = 0;
