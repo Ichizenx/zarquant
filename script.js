@@ -230,6 +230,9 @@
     var node = document.getElementById("statLastBar");
     var last = rolled[rolled.length - 1];
     if (node) node.textContent = last ? faDay.format(last.t) : "—";
+    if (typeof window.ZarquantDrawing !== "undefined") {
+      window.ZarquantDrawing.series(state.series);
+    }
   }
 
   function renderLegend(bar) {
@@ -425,12 +428,14 @@
 
   function rowHtml(catKey, index, item) {
     var cls = changeClass(item.ch);
+    var closeCls = changeClass(item.c - item.p);
     return (
       '<button type="button" class="wl-row" data-cat="' + catKey + '" data-index="' + index +
       '" data-sym="' + escapeHtml(item.s) + '" title="' + escapeHtml(item.n) + '">' +
       '<span class="sym">' + escapeHtml(item.s) + "</span>" +
       '<span class="last">' + priceText(item.p) + "</span>" +
-      '<span class="chg ' + cls + '">' + signed(deltaOf(item)) + "</span>" +
+      '<span class="close ' + closeCls + '">' + priceText(item.c) + "</span>" +
+      '<span class="volume">' + window.ZChart.fmtVolume(item.v) + "</span>" +
       '<span class="pct ' + cls + '">' + signedPct(item.ch) + "</span>" +
       "</button>"
     );
@@ -625,6 +630,188 @@
     }
   });
 
+  /* ============================================================================
+     Drawing toolbar + canvas overlay
+     ============================================================================ */
+  (function initDrawing() {
+    var drawCanvas = $("#drawCanvas");
+    var ctx = drawCanvas.getContext("2d");
+    var chartCanvas = $("#chartCanvas");
+
+    var state = {
+      tool: "crosshair",
+      active: false,
+      start: { x: 0, y: 0 },
+      current: { x: 0, y: 0 },
+      drawings: [], // { type, x1, y1, x2, y2, px1, px2, ... }
+    };
+
+    // Resize the overlay canvas to match the chart container
+    function resizeDrawCanvas() {
+      var rect = chartCanvas.getBoundingClientRect();
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      drawCanvas.width = Math.round(rect.width * dpr);
+      drawCanvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      redraw();
+    }
+
+    // Map screen coordinates -> chart price/time coordinates
+    function screenToChart(x, y) {
+      // Use ZChart internals via the public API surface where possible.
+      // We fall back to reading the canvas layout from the DOM.
+      var barCanvas = $("#candles");
+      var bRect = barCanvas.getBoundingClientRect();
+      var cx = x - bRect.left;
+      var cy = y - bRect.top;
+
+      var bars = state.series || [];
+      if (!bars.length) return null;
+
+      // Recompute the same layout chart.js uses (PAD constants)
+      var PAD = { top: 12, right: 62, bottom: 24, left: 8 };
+      var W = Math.max(120, Math.round(bRect.width));
+      var H = Math.max(120, Math.round(bRect.height));
+      var layoutLeft = PAD.left;
+      var layoutRight = W - PAD.right;
+      var layoutTop = PAD.top;
+      var layoutBottom = H - PAD.bottom;
+      var priceBottom = layoutTop + Math.round((layoutBottom - layoutTop) * 0.78);
+
+      // Clamp to plot area
+      cx = clamp(cx, layoutLeft, layoutRight);
+      cy = clamp(cy, layoutTop, layoutBottom);
+
+      // Determine visible bar range from chart state — mirror of chart.js view
+      var span = 60; // default, but we need actual from chart
+      // Use the chart's visible range by approximating from x position
+      var first = Math.max(0, bars.length - span);
+      var barW = (layoutRight - layoutLeft) / Math.max(1, span);
+      var index = Math.round(first + (cx - layoutLeft) / barW - 0.5);
+      index = clamp(index, 0, bars.length - 1);
+
+      // Price from y coordinate — need price range
+      // Approximate range from visible bars
+      var visible = bars.slice(first, Math.min(bars.length, first + span));
+      var lo = Math.min.apply(null, visible.map(function (b) { return b.l; }));
+      var hi = Math.max.apply(null, visible.map(function (b) { return b.h; }));
+      var pad = (hi - lo) * 0.08;
+      lo -= pad; hi += pad;
+
+      var price = hi - (cy - layoutTop) / (priceBottom - layoutTop) * (hi - lo);
+
+      return { x: cx, y: cy, index: index, price: price, time: bars[index] ? bars[index].t : null };
+    }
+
+    function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+    function redraw() {
+      ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      ctx.save();
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#2962ff";
+      ctx.fillStyle = "#2962ff";
+
+      state.drawings.forEach(function (d) {
+        ctx.beginPath();
+        if (d.type === "line" || d.type === "trendline") {
+          ctx.moveTo(d.x1, d.y1);
+          ctx.lineTo(d.x2, d.y2);
+        } else if (d.type === "horizline") {
+          ctx.moveTo(0, d.y);
+          ctx.lineTo(drawCanvas.width / (Math.min(2, window.devicePixelRatio || 1)), d.y);
+        } else if (d.type === "vertline") {
+          ctx.moveTo(d.x, 0);
+          ctx.lineTo(d.x, drawCanvas.height / (Math.min(2, window.devicePixelRatio || 1)));
+        }
+        ctx.stroke();
+      });
+
+      // Draw in-progress line
+      if (state.active && (state.tool === "line" || state.tool === "trendline")) {
+        ctx.beginPath();
+        ctx.moveTo(state.start.x, state.start.y);
+        ctx.lineTo(state.current.x, state.current.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function addDrawing(type, p1, p2) {
+      state.drawings.push({ type: type, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
+      redraw();
+    }
+
+    // Mouse events on the overlay canvas
+    drawCanvas.addEventListener("mousedown", function (evt) {
+      if (state.tool === "crosshair") return;
+      var rect = drawCanvas.getBoundingClientRect();
+      var x = evt.clientX - rect.left;
+      var y = evt.clientY - rect.top;
+
+      state.active = true;
+      state.start = { x: x, y: y };
+      state.current = { x: x, y: y };
+
+      if (state.tool === "horizline") {
+        addDrawing("horizline", { x: 0, y: y }, { x: 0, y: y });
+        state.active = false;
+      } else if (state.tool === "vertline") {
+        addDrawing("vertline", { x: x, y: 0 }, { x: x, y: 0 });
+        state.active = false;
+      }
+    });
+
+    drawCanvas.addEventListener("mousemove", function (evt) {
+      if (!state.active) return;
+      var rect = drawCanvas.getBoundingClientRect();
+      state.current = {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+      };
+      if (state.tool === "line" || state.tool === "trendline") {
+        redraw();
+      }
+    });
+
+    drawCanvas.addEventListener("mouseup", function () {
+      if (!state.active) return;
+      if (state.tool === "line" || state.tool === "trendline") {
+        addDrawing("line", state.start, state.current);
+      }
+      state.active = false;
+    });
+
+    drawCanvas.addEventListener("mouseleave", function () {
+      state.active = false;
+    });
+
+    // Expose for toolbar
+    window.ZarquantDrawing = {
+      setTool: function (tool) {
+        state.tool = tool;
+        // Only capture pointer events on the overlay while a real drawing tool
+        // is active; in crosshair mode let events pass through to the chart
+        // canvas so crosshair / pan / zoom / hover keep working.
+        drawCanvas.style.pointerEvents = tool !== "crosshair" ? "auto" : "none";
+        redraw();
+      },
+      getTool: function () { return state.tool; },
+      resize: resizeDrawCanvas,
+      series: function (s) { state.series = s; },
+    };
+
+    // Wire up resize
+    if (window.ResizeObserver) {
+      new ResizeObserver(resizeDrawCanvas).observe(chartCanvas);
+    } else {
+      window.addEventListener("resize", resizeDrawCanvas);
+    }
+    resizeDrawCanvas();
+  })();
+
   document.addEventListener("fullscreenchange", function () {
     window.setTimeout(function () { chart.resize(); }, 60);
   });
@@ -648,6 +835,136 @@
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") closeWatchlist();
   });
+
+  /* ============================================================================
+     Toolbar button handlers
+     ============================================================================ */
+  var toolbarBtns = document.querySelectorAll(".tb-btn");
+  var trendlineBtn = document.querySelector('[data-tool="trendline"]');
+  var dropdownMenu = $("#trendlineMenu");
+  var activeToolBtn = document.querySelector(".tb-btn.is-active");
+
+  toolbarBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var tool = btn.dataset.tool;
+
+      // Trend line opens the dropdown instead of directly selecting
+      if (tool === "trendline") {
+        var isOpen = !dropdownMenu.classList.contains("hidden");
+        if (isOpen) {
+          dropdownMenu.classList.add("hidden");
+        } else {
+          // Position dropdown next to the button
+          var rect = btn.getBoundingClientRect();
+          dropdownMenu.style.top = (rect.bottom + 4) + "px";
+          dropdownMenu.style.left = (rect.left - 10) + "px";
+          dropdownMenu.classList.remove("hidden");
+        }
+        return;
+      }
+
+      // Close dropdown if open
+      dropdownMenu.classList.add("hidden");
+
+      // Update active state
+      toolbarBtns.forEach(function (b) {
+        b.classList.remove("is-active");
+        b.setAttribute("aria-pressed", "false");
+      });
+      btn.classList.add("is-active");
+      btn.setAttribute("aria-pressed", "true");
+
+      if (typeof window.ZarquantDrawing !== "undefined") {
+        window.ZarquantDrawing.setTool(tool);
+      }
+    });
+  });
+
+  // Dropdown item selection
+  dropdownMenu.addEventListener("click", function (event) {
+    var item = event.target.closest(".dropdown-item");
+    if (!item) return;
+    var drawType = item.dataset.draw;
+
+    dropdownMenu.classList.add("hidden");
+
+    // Update active button to trendline (parent) and set drawing sub-tool
+    toolbarBtns.forEach(function (b) {
+      b.classList.remove("is-active");
+      b.setAttribute("aria-pressed", "false");
+    });
+    trendlineBtn.classList.add("is-active");
+    trendlineBtn.setAttribute("aria-pressed", "true");
+
+    if (typeof window.ZarquantDrawing !== "undefined") {
+      window.ZarquantDrawing.setTool(drawType);
+    }
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", function (event) {
+    if (!trendlineBtn.contains(event.target) && !dropdownMenu.contains(event.target)) {
+      dropdownMenu.classList.add("hidden");
+    }
+  });
+
+  /* ============================================================================
+     Watchlist column sorting
+     ============================================================================ */
+  var sortCols = document.querySelectorAll(".sort-col");
+  var sortState = {}; // column -> "asc" | "desc"
+
+  sortCols.forEach(function (col) {
+    col.addEventListener("click", function () {
+      var key = col.dataset.sort;
+      var dir = sortState[key] === "asc" ? "desc" : "asc";
+      sortState = {}; // clear others
+      sortState[key] = dir;
+
+      // Update arrows
+      sortCols.forEach(function (c) {
+        var arrow = c.querySelector(".sort-arrow");
+        if (c.dataset.sort === key) {
+          arrow.className = "sort-arrow " + (dir === "asc" ? "asc" : "desc");
+        } else {
+          arrow.className = "sort-arrow";
+        }
+      });
+
+      applyWatchlistSort(key, dir);
+    });
+  });
+
+  function applyWatchlistSort(key, dir) {
+    if (!state.data) return;
+    var multiplier = dir === "asc" ? 1 : -1;
+
+    Object.keys(state.data.categories).forEach(function (catKey) {
+      var group = state.data.categories[catKey];
+      if (!Array.isArray(group)) return;
+      group.sort(function (a, b) {
+        var av, bv;
+        switch (key) {
+          case "symbol": av = (a.s || "").toLowerCase(); bv = (b.s || "").toLowerCase(); break;
+          case "last": av = a.p || 0; bv = b.p || 0; break;
+          case "close": av = a.c || 0; bv = b.c || 0; break;
+          case "volume": av = a.v || 0; bv = b.v || 0; break;
+          case "change": av = a.ch || 0; bv = b.ch || 0; break;
+          default: av = 0; bv = 0;
+        }
+        if (av < bv) return -1 * multiplier;
+        if (av > bv) return 1 * multiplier;
+        return 0;
+      });
+    });
+
+    // Re-render and keep current selection
+    var keep = state.selected;
+    renderWatchlist();
+    if (keep && (state.data.categories[keep.cat] || [])[keep.index]) {
+      selectRow(keep.cat, keep.index);
+    }
+  }
 
   /* ------------------------------------------------------------- boot */
   renderSkeleton();
