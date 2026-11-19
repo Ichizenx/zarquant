@@ -473,7 +473,114 @@
     el.count.textContent = nf.format(shown);
     el.empty.hidden = shown !== 0;
     markSelected();
+    refreshWatchlistResizers();
   }
+
+  /* ------------------------------------------------------------- watchlist column resizers */
+  var wlColWidths = { last: 76, close: 70, volume: 64, pct: 60 }; // px; symbol takes the rest
+  var wlResizers = [];
+
+  function createWatchlistResizers() {
+    var body = el.body;
+    if (body.querySelector(".wl-resizer")) return;
+    wlResizers = [];
+    for (var i = 0; i < 4; i += 1) {
+      var r = document.createElement("div");
+      r.className = "wl-resizer";
+      r.dataset.col = i;
+      body.appendChild(r);
+      wlResizers.push(r);
+    }
+  }
+
+  function watchlistGridCss() {
+    // symbol column takes the remaining space; fixed columns follow.
+    var sym = "1fr";
+    return sym + " " + wlColWidths.last + "px " + wlColWidths.close + "px " +
+      wlColWidths.volume + "px " + wlColWidths.pct + "px";
+  }
+
+  function applyWatchlistGrid() {
+    var css = watchlistGridCss();
+    el.watchlist.style.setProperty("--wl-cols", css);
+    var rows = el.body.querySelectorAll(".wl-row, .wl-cols");
+    for (var i = 0; i < rows.length; i += 1) {
+      rows[i].style.setProperty("grid-template-columns", css);
+    }
+    placeWatchlistResizers();
+  }
+
+  function placeWatchlistResizers() {
+    if (wlResizers.length === 0) return;
+    var header = document.querySelector(".wl-cols");
+    if (!header) return;
+    var hRect = header.getBoundingClientRect();
+    var bRect = el.body.getBoundingClientRect();
+    var offsetX = hRect.left - bRect.left;
+    var cells = header.children;
+    var acc = 0;
+    var boundaries = [];
+    for (var i = 0; i < cells.length; i += 1) {
+      var cell = cells[i];
+      if (i === cells.length - 1) break;
+      acc += cell.getBoundingClientRect().width + 4; // + gap
+      boundaries.push(acc);
+    }
+    wlResizers.forEach(function (r, i) {
+      var x = boundaries[i];
+      if (x == null) return;
+      r.style.left = Math.round(x - offsetX) + "px";
+      r.style.top = "0";
+      r.style.bottom = "0";
+      r.style.width = "6px";
+      r.style.position = "absolute";
+      r.style.cursor = "col-resize";
+      r.style.zIndex = "5";
+      r.style.background = "rgba(41, 98, 255, 0.35)";
+      r.style.opacity = "0.6";
+    });
+  }
+
+  function refreshWatchlistResizers() {
+    createWatchlistResizers();
+    applyWatchlistGrid();
+  }
+
+  // Drag a watchlist column resizer
+  el.body.addEventListener("mousedown", function (evt) {
+    var r = evt.target.closest(".wl-resizer");
+    if (!r) return;
+    var col = Number(r.dataset.col);
+    var keys = ["last", "close", "volume", "pct"];
+    var key = keys[col];
+    var rect = el.body.getBoundingClientRect();
+    var startX = evt.clientX - rect.left;
+    var startWidth = wlColWidths[key];
+    var dragging = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    function onMove(e) {
+      if (!dragging) return;
+      var dx = (e.clientX - rect.left) - startX;
+      var next = clamp(startWidth + dx, 40, 200);
+      wlColWidths[key] = next;
+      applyWatchlistGrid();
+    }
+
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    evt.preventDefault();
+  });
 
   /* ------------------------------------------------------------- pulse */
   function renderPulse() {
@@ -631,6 +738,63 @@
   });
 
   /* ============================================================================
+     Chart pane resizer — drag the handle between the price pane and volume pane
+     to change their height ratio.
+     ============================================================================ */
+  (function initChartResizer() {
+    var handle = $("#chartResizer");
+    var chartCanvas = $("#chartCanvas");
+    if (!handle || !chartCanvas || !chart) return;
+
+    var dragging = false;
+
+    function placeHandle() {
+      var rect = chartCanvas.getBoundingClientRect();
+      var r = chart.getPriceRatio ? chart.getPriceRatio() : 0.78;
+      var plotH = rect.bottom - rect.top;
+      handle.style.top = (rect.top + Math.round(r * plotH) - 4) + "px";
+      handle.style.left = rect.left + "px";
+      handle.style.width = Math.round(rect.width) + "px";
+    }
+
+    function updateFromY(y) {
+      var rect = chartCanvas.getBoundingClientRect();
+      var plotH = rect.bottom - rect.top;
+      if (plotH <= 0) return;
+      var ratio = (y - rect.top) / plotH;
+      chart.setPriceRatio(ratio);
+      placeHandle();
+    }
+
+    handle.addEventListener("mousedown", function (evt) {
+      dragging = true;
+      handle.classList.add("is-dragging");
+      document.body.style.cursor = "ns-resize";
+      document.body.style.userSelect = "none";
+      placeHandle();
+      evt.preventDefault();
+    });
+
+    document.addEventListener("mousemove", function (evt) {
+      if (!dragging) return;
+      updateFromY(evt.clientY);
+    });
+
+    document.addEventListener("mouseup", function () {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove("is-dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    });
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(placeHandle).observe(chartCanvas);
+    }
+    placeHandle();
+  })();
+
+  /* ============================================================================
      Drawing toolbar + canvas overlay
      ============================================================================ */
   (function initDrawing() {
@@ -744,12 +908,61 @@
       redraw();
     }
 
+    // Distance from point (x,y) to line segment (x1,y1)-(x2,y2)
+    function distToSegment(x, y, x1, y1, x2, y2) {
+      var dx = x2 - x1;
+      var dy = y2 - y1;
+      var len2 = dx * dx + dy * dy;
+      var t = 0;
+      if (len2 > 0) {
+        t = ((x - x1) * dx + (y - y1) * dy) / len2;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+      }
+      var px = x1 + t * dx;
+      var py = y1 + t * dy;
+      return Math.sqrt((x - px) * (x - px) + (y - py) * (y - py));
+    }
+
+    // Remove the drawing nearest to (x,y) if it's within the hit threshold.
+    function deleteHit(x, y) {
+      var hit = -1;
+      var best = 10; // px tolerance
+      state.drawings.forEach(function (d, i) {
+        var d1;
+        if (d.type === "line" || d.type === "trendline") {
+          d1 = distToSegment(x, y, d.x1, d.y1, d.x2, d.y2);
+        } else if (d.type === "horizline") {
+          d1 = Math.abs(y - d.y);
+          // only count if x is within the drawn horizontal span (full width)
+          if (d1 > best) d1 = Infinity;
+        } else if (d.type === "vertline") {
+          d1 = Math.abs(x - d.x);
+          if (d1 > best) d1 = Infinity;
+        } else {
+          d1 = Infinity;
+        }
+        if (d1 < best) { best = d1; hit = i; }
+      });
+      if (hit >= 0) {
+        state.drawings.splice(hit, 1);
+        redraw();
+        return true;
+      }
+      return false;
+    }
+
     // Mouse events on the overlay canvas
     drawCanvas.addEventListener("mousedown", function (evt) {
       if (state.tool === "crosshair") return;
       var rect = drawCanvas.getBoundingClientRect();
       var x = evt.clientX - rect.left;
       var y = evt.clientY - rect.top;
+
+      // Delete / Eraser tool: click on a drawn line to remove it
+      if (state.tool === "delete") {
+        deleteHit(x, y);
+        return;
+      }
 
       state.active = true;
       state.start = { x: x, y: y };
@@ -801,6 +1014,7 @@
       getTool: function () { return state.tool; },
       resize: resizeDrawCanvas,
       series: function (s) { state.series = s; },
+      deleteHit: function (x, y) { return deleteHit(x, y); },
     };
 
     // Wire up resize

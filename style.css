@@ -428,6 +428,24 @@ svg { display: block; }
   touch-action: none;
 }
 
+/* Horizontal drag handle between the price pane and the volume pane */
+.chart-resizer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+  z-index: 12;
+  background: rgba(41, 98, 255, 0.35);
+  opacity: 0.6;
+  pointer-events: auto;
+}
+.chart-resizer:hover, .chart-resizer.is-dragging {
+  background: var(--blue);
+  opacity: 1;
+  height: 8px;
+}
+
 /* Transparent drawing canvas overlay — perfectly covers the chart plot area.
    pointer-events: none by default so chart crosshair/pan/zoom/hover work;
    script.js switches to "auto" when a non-crosshair drawing tool is active. */
@@ -603,7 +621,7 @@ svg { display: block; }
 .wl-cols,
 .wl-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 76px 70px 64px 60px;
+  grid-template-columns: var(--wl-cols, minmax(0, 1fr) 76px 70px 64px 60px);
   gap: 4px;
   align-items: center;
 }
@@ -757,6 +775,24 @@ svg { display: block; }
 .wl-row .up { color: var(--green); }
 .wl-row .down { color: var(--red); }
 .wl-row .flat { color: var(--muted); }
+
+/* Watchlist column resizers — draggable vertical lines between columns */
+.wl-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 5;
+  background: rgba(41, 98, 255, 0.35);
+  opacity: 0.6;
+  pointer-events: auto;
+}
+.wl-resizer:hover, .wl-resizer.is-dragging {
+  background: var(--blue);
+  opacity: 1;
+  width: 8px;
+}
 
 .wl-more {
   width: calc(100% - 24px);

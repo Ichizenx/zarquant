@@ -67,6 +67,11 @@
           <path d="M2 14Q4 2 8 4T14 2"/>
         </svg>
       </button>
+      <button type="button" class="tb-btn" data-tool="delete" title="حذف خط" aria-label="حذف خط رسته">
+        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 9 6 9 3"/><path d="M7 3v9M5 6h6M4 3l2 3M8 3l-2 3"/>
+        </svg>
+      </button>
       <button type="button" class="tb-btn" data-tool="text" title="متن" aria-label="متن">
         <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 4h5M3 8h6M3 12h4"/>
@@ -245,6 +250,8 @@
         <canvas id="candles" role="img" aria-label="نمودار قیمت شمعی"></canvas>
         <!-- Transparent drawing canvas overlay covering the chart area -->
         <canvas class="draw-canvas" id="drawCanvas" aria-hidden="true"></canvas>
+        <!-- Drag handle between the price pane and the volume pane -->
+        <div class="chart-resizer" id="chartResizer" aria-label="بزرگ‌سازی/کوچک‌سازی نما" role="separator"></div>
         <div class="chart-state" id="chartState" hidden>
           <span class="cs-title" id="chartStateTitle"></span>
           <span class="cs-sub" id="chartStateSub"></span>
