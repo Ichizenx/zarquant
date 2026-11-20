@@ -86,7 +86,6 @@
     var raf = 0;
     var dragging = null;
     var pinch = null;
-    var drawings = [];
 
     var layout = { left: 0, right: 0, top: 0, bottom: 0, priceBottom: 0, volTop: 0, barW: 8 };
     var priceRatio = 0.78; // fraction of plot height given to the price pane
@@ -106,7 +105,6 @@
       layout.bottom = H - PAD.bottom;
       applyPriceRatio();
       dirty = true;
-      if (opts.onResize) opts.onResize(W, H, dpr);
     }
 
     function applyPriceRatio() {
@@ -594,27 +592,7 @@
       return clamp(Math.round(first + (x - layout.left) / barW() - 0.5), 0, bars.length - 1);
     }
 
-    /* ------------------------------------------------------------- coordinate conversion */
-    function priceToCoordinate(price) { return yOf(price); }
-    function coordinateToPrice(y) {
-      var span = range.hi - range.lo || 1;
-      return range.hi - (y - layout.top) / (layout.priceBottom - layout.top) * span;
-    }
-    function indexToCoordinate(i) { return xOf(i); }
-    function coordinateToIndex(x) { return indexAt(x); }
-
-    /* ------------------------------------------------------------- overlay drawings */
-    function setDrawings(next) {
-      drawings = Array.isArray(next) ? next.slice() : [];
-      dirty = true;
-      tick();
-    }
-    function getDrawings() { return drawings; }
-    function redraw() { dirty = true; tick(); }
-    function getDpr() { return dpr; }
-
     function onPointerMove(evt) {
-      if (opts.pointerBlocked && opts.pointerBlocked()) return;
       var x = pointerX(evt);
       var y = pointerY(evt);
       if (dragging) {
@@ -642,7 +620,6 @@
     function onPointerDown(evt) {
       if (!bars.length) return;
       if (evt.button !== undefined && evt.button !== 0) return;
-      if (opts.pointerBlocked && opts.pointerBlocked()) return;
       canvas.setPointerCapture(evt.pointerId);
       dragging = { x: pointerX(evt), end: view.tEnd, id: evt.pointerId };
       canvas.style.cursor = "grabbing";
@@ -657,7 +634,6 @@
 
     function onPointerLeave() {
       if (dragging) return;
-      if (opts.pointerBlocked && opts.pointerBlocked()) return;
       hover.on = false;
       if (opts.onLeave) opts.onLeave();
       dirty = true;
@@ -666,7 +642,6 @@
 
     function onWheel(evt) {
       if (!bars.length) return;
-      if (opts.pointerBlocked && opts.pointerBlocked()) return;
       evt.preventDefault();
       var plotW = layout.right - layout.left;
       var x = pointerX(evt);
@@ -734,14 +709,6 @@
       timeLabel: timeLabel,
       fmtPrice: fmtPrice,
       fmtVolume: fmtVolume,
-      priceToCoordinate: priceToCoordinate,
-      coordinateToPrice: coordinateToPrice,
-      indexToCoordinate: indexToCoordinate,
-      coordinateToIndex: coordinateToIndex,
-      setDrawings: setDrawings,
-      getDrawings: getDrawings,
-      redraw: redraw,
-      getDpr: getDpr,
     };
   }
 
