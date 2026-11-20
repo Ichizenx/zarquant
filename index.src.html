@@ -43,152 +43,6 @@
     </div>
   </header>
 
-  <!-- Left drawing toolbar (fixed vertical sidebar on the chart's left edge) -->
-  <aside class="draw-toolbar" id="drawToolbar" aria-label="ابزارهای رسم">
-    <div class="toolbar-group">
-      <button type="button" class="tb-btn is-active" data-tool="crosshair" title="خنک‌چسب" aria-label="خنک‌چسب">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="8" y1="1" x2="8" y2="15"/><line x1="1" y1="8" x2="15" y2="8"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="trendline" title="خط روند" aria-label="خط روند" aria-haspopup="true" aria-controls="trendlineMenu">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2 14l10-10"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="fibonacci" title="فیبوناچی" aria-label="فیبوناچی">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 4L4 12M8 4L8 12M12 4L12 12"/>
-          <path d="M4 4Q8 12 12 4" fill="none"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="brush" title="براش" aria-label="براش">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2 14Q4 2 8 4T14 2"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="delete" title="حذف خط" aria-label="حذف خط رسته">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 9 6 9 3"/><path d="M7 3v9M5 6h6M4 3l2 3M8 3l-2 3"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="text" title="متن" aria-label="متن">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 4h5M3 8h6M3 12h4"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="patterns" title="الگو‌ها" aria-label="الگو‌ها">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="2" width="6" height="6" rx=".5"/><rect x="8" y="8" width="6" height="6" rx=".5"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="toolbar-divider"></div>
-
-    <div class="toolbar-group">
-      <button type="button" class="tb-btn" data-tool="prediction" title="پیش‌بینی" aria-label="پیش‌بینی">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2 14Q8 2 14 14"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="ruler" title="شاخص" aria-label="شاخص">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2 4h12M2 8h12M2 12h10"/><path d="M2 2v12M5 2v12M10 2v12"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="zoomin" title="بزرگ‌سازی" aria-label="بزرگ‌سازی">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="8" cy="8" r="5"/><path d="M12 12l2 2M8 3v5M3 8h5"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="zoomout" title="کوچک‌سازی" aria-label="کوچک‌سازی">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="8" cy="8" r="5"/><path d="M3 8h10"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="magnet" title="جذب" aria-label="جذب">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 4v8a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V4z"/><path d="M7 4v8M9 4v8"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="lock" title="قفل" aria-label="قفل">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="5" y="6" width="6" height="6" rx="1"/><path d="M8 6v-2M8 14V8"/>
-        </svg>
-      </button>
-      <button type="button" class="tb-btn" data-tool="hide" title="پنهان‌سازی" aria-label="پنهان‌سازی">
-        <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2 8s4-4 6 0 6 4 6 0"/><circle cx="8" cy="8" r="2"/>
-        </svg>
-      </button>
-    </div>
-  </aside>
-
-  <!-- Trend line dropdown menu (hidden by default) -->
-  <div class="dropdown-menu hidden" id="trendlineMenu" role="menu" aria-label="انواع خط روند">
-    <div class="dropdown-item" data-draw="trendline" role="menuitem">
-      <span>خط روند</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-    <div class="dropdown-item" data-draw="trendangle" role="menuitem">
-      <span>زاویه روند</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-    <div class="dropdown-item" data-draw="horizline" role="menuitem">
-      <span>خط افقی</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-    <div class="dropdown-item" data-draw="horizray" role="menuitem">
-      <span>شعه افقی</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-    <div class="dropdown-item" data-draw="vertline" role="menuitem">
-      <span>خط عمودی</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-    <div class="dropdown-item" data-draw="arrow" role="menuitem">
-      <span>فلش</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-    <div class="dropdown-item" data-draw="ray" role="menuitem">
-      <span>شعه</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-    <div class="dropdown-item" data-draw="extendedline" role="menuitem">
-      <span>خط دراز</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-    <div class="dropdown-item" data-draw="parallelchannel" role="menuitem">
-      <span>کانال موازی</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-    <div class="dropdown-item" data-draw="flattopbottom" role="menuitem">
-      <span>سقف/کف مسطح</span>
-      <svg class="star" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-        <polygon points="8,1 9.5,6.5 15,7 10,9.5 11.5,15 8,11.5 4.5,15 6,9.5 1,7 6.5,6.5"/>
-      </svg>
-    </div>
-  </div>
-
   <main class="stage">
     <section class="chart" id="chartPanel" aria-label="نمودار نماد انتخاب‌شده">
       <div class="chart-head">
@@ -248,64 +102,6 @@
 
       <div class="chart-canvas" id="chartCanvas">
         <canvas id="candles" role="img" aria-label="نمودار قیمت شمعی"></canvas>
-<<<<<<< HEAD
-        <canvas id="drawCanvas" class="draw-overlay" aria-hidden="true"></canvas>
-        <aside class="draw-toolbar" id="drawToolbar" aria-label="ابزارهای رسم روی نمودار">
-          <button type="button" class="d-btn is-active" data-mode="crosshair" aria-pressed="true" title="کراس‌هر (Crosshair)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v12M2 8h12"/><circle cx="8" cy="8" r="1"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="trendline" id="dTrendline" aria-pressed="false" aria-haspopup="true" title="خط روند (Trend Line)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l7-7"/><circle cx="3" cy="13" r="0.7"/><circle cx="10" cy="6" r="0.7"/></svg>
-          </button>
-          <div class="d-menu" id="dMenu" hidden role="menu">
-            <button type="button" class="d-menu-item" data-mode="trendline" role="menuitem"><span>خط روند</span><span class="d-star" data-fav="trendline">☆</span></button>
-            <button type="button" class="d-menu-item" data-mode="trendangle" role="menuitem"><span>زاویه خط روند</span><span class="d-star" data-fav="trendangle">☆</span></button>
-            <button type="button" class="d-menu-item" data-mode="horizline" role="menuitem"><span>خط افقی</span><span class="d-star" data-fav="horizline">☆</span></button>
-            <button type="button" class="d-menu-item" data-mode="horizray" role="menuitem"><span>شعاع افقی</span><span class="d-star" data-fav="horizray">☆</span></button>
-            <button type="button" class="d-menu-item" data-mode="vertline" role="menuitem"><span>خط عمودی</span><span class="d-star" data-fav="vertline">☆</span></button>
-            <button type="button" class="d-menu-item" data-mode="arrow" role="menuitem"><span>فلش</span><span class="d-star" data-fav="arrow">☆</span></button>
-            <button type="button" class="d-menu-item" data-mode="ray" role="menuitem"><span>شعاع</span><span class="d-star" data-fav="ray">☆</span></button>
-            <button type="button" class="d-menu-item" data-mode="extendedline" role="menuitem"><span>خط گسترده</span><span class="d-star" data-fav="extendedline">☆</span></button>
-            <button type="button" class="d-menu-item" data-mode="parallelchannel" role="menuitem"><span>کانال مساوی</span><span class="d-star" data-fav="parallelchannel">☆</span></button>
-            <button type="button" class="d-menu-item" data-mode="flattopbottom" role="menuitem"><span>سقف/کف مسطح</span><span class="d-star" data-fav="flattopbottom">☆</span></button>
-          </div>
-          <button type="button" class="d-btn" data-mode="fibonacci" title="فایبوناچی (Fibonacci)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h12M3 8h9M4 12h5"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="brush" title="براش (Brush)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 11 9M11 9 13 7M11 9 9 11M5 3 3 5"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="text" title="متن (Text)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4h4M5 8h2M4 12h4"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="patterns" title="الگوها (Patterns)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="4" height="4" fill="currentColor" opacity=".6"/><rect x="8" y="8" width="4" height="4" fill="currentColor" opacity=".6"/><rect x="8" y="4" width="4" height="4" fill="none"/><rect x="4" y="8" width="4" height="4" fill="none"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="prediction" title="پیش‌بینی (Prediction)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12l6-5 4 4M8 7l2-2M8 7l-2-2"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="ruler" title="خط‌سنج (Ruler)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 8h12M4 6v4M8 6v4M12 6v4"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="zoom" title="بزرگ‌نمایی / کوچک‌نمایی (Zoom)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="5" r="3"/><path d="M14 8 16 10M11 3v4M9 5h4"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="magnet" title="مقناطیس (Magnet)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v8a2 2 0 0 0 4 0V4zM8 6h3M8 10h3"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="lock" title="قفل (Lock)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="8" height="6" rx="2"/><path d="M8 10V6a2 2 0 0 1 4 0v4z"/><circle cx="8" cy="9" r="0.5" fill="currentColor"/></svg>
-          </button>
-          <button type="button" class="d-btn" data-mode="hide" title="مخفی (Hide)">
-            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c2-2 6-2 8 0s2 2 4 0M2 12c2 2 6 2 8 0s2-2 4 0M14 4 4 14"/><circle cx="8" cy="10" r="0.7" fill="currentColor"/></svg>
-          </button>
-        </aside>
-=======
-        <!-- Transparent drawing canvas overlay covering the chart area -->
-        <canvas class="draw-canvas" id="drawCanvas" aria-hidden="true"></canvas>
-        <!-- Drag handle between the price pane and the volume pane -->
-        <div class="chart-resizer" id="chartResizer" aria-label="بزرگ‌سازی/کوچک‌سازی نما" role="separator"></div>
->>>>>>> ad7232b74f7cc527c0a7f987082018e73d3398f4
         <div class="chart-state" id="chartState" hidden>
           <span class="cs-title" id="chartStateTitle"></span>
           <span class="cs-sub" id="chartStateSub"></span>
@@ -336,21 +132,12 @@
       <input id="search" type="search" placeholder="جستجوی نماد یا نام شرکت…" autocomplete="off" spellcheck="false" aria-label="جستجوی نماد">
     </label>
 
-<<<<<<< HEAD
     <div class="wl-cols">
       <button type="button" class="wl-col-sort" data-key="s" aria-sort="none">نماد <span class="wl-sort-arrow"></span></button>
       <span>آخرین قیمت</span>
       <span>قیمت پایانی</span>
       <span>حجم</span>
       <button type="button" class="wl-col-sort" data-key="ch" aria-sort="none">تغییر % <span class="wl-sort-arrow"></span></button>
-=======
-    <div class="wl-cols sortable-cols" aria-hidden="true">
-      <span class="sort-col" data-sort="symbol">نماد <span class="sort-arrow" aria-hidden="true"></span></span>
-      <span class="sort-col" data-sort="last">آخرین معاملة <span class="sort-arrow" aria-hidden="true"></span></span>
-      <span class="sort-col" data-sort="close">قیمت پایانی <span class="sort-arrow" aria-hidden="true"></span></span>
-      <span class="sort-col" data-sort="volume">حجم <span class="sort-arrow" aria-hidden="true"></span></span>
-      <span class="sort-col" data-sort="change">تغییر % <span class="sort-arrow" aria-hidden="true"></span></span>
->>>>>>> ad7232b74f7cc527c0a7f987082018e73d3398f4
     </div>
 
     <div class="wl-body" id="wlBody"></div>
