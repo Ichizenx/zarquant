@@ -89,6 +89,7 @@
     var drawings = [];
 
     var layout = { left: 0, right: 0, top: 0, bottom: 0, priceBottom: 0, volTop: 0, barW: 8 };
+    var priceRatio = 0.78; // fraction of plot height given to the price pane
 
     /* ------------------------------------------------------------- sizing */
     function resize() {
@@ -103,12 +104,27 @@
       layout.right = W - PAD.right;
       layout.top = PAD.top;
       layout.bottom = H - PAD.bottom;
-      var plotH = layout.bottom - layout.top;
-      layout.priceBottom = layout.top + Math.round(plotH * 0.78);
-      layout.volTop = layout.priceBottom + 8;
+      applyPriceRatio();
       dirty = true;
       if (opts.onResize) opts.onResize(W, H, dpr);
     }
+
+    function applyPriceRatio() {
+      var plotH = layout.bottom - layout.top;
+      var r = clamp(priceRatio, 0.45, 0.9);
+      layout.priceBottom = layout.top + Math.round(plotH * r);
+      layout.volTop = layout.priceBottom + 8;
+    }
+
+    /* Adjust the price/volume pane split ratio (0..1). Returns the clamped ratio. */
+    function setPriceRatio(next) {
+      priceRatio = clamp(next, 0.45, 0.9);
+      applyPriceRatio();
+      dirty = true;
+      tick();
+      return priceRatio;
+    }
+    function getPriceRatio() { return priceRatio; }
 
     function defaultSpan() {
       var plotW = Math.max(80, layout.right - layout.left);
@@ -699,6 +715,8 @@
       setWatermark: setWatermark,
       setLivePrice: setLivePrice,
       resetView: resetView,
+      setPriceRatio: setPriceRatio,
+      getPriceRatio: getPriceRatio,
       resize: function () {
         resize();
         tick();
