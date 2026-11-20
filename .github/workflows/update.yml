@@ -44,47 +44,8 @@ jobs:
           TSETMC_PROXY: ${{ secrets.TSETMC_PROXY }}
         run: timeout 900 python fetch_data.py -o data.json --bars 150 --history 8 --auto-proxy
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install StatiCrypt
-        run: npm install -g staticrypt@3
-
-      # index.src.html is the plain template. StatiCrypt turns it into the
-      # password-gated index.html that GitHub Pages serves. The password comes
-      # from the STATICRYPT_PASSWORD secret when it is configured, and otherwise
-      # falls back to the repository password below.
-      - name: Encrypt index.src.html into index.html
-        env:
-          STATICRYPT_PASSWORD: ${{ secrets.STATICRYPT_PASSWORD || 'e19m_1iLL' }}
-        run: |
-          set -euo pipefail
-          if [ -z "${STATICRYPT_PASSWORD}" ]; then
-            echo "::error::No StatiCrypt password available (secret and fallback are both empty)"
-            exit 1
-          fi
-          cp index.src.html index.html
-          rm -rf .staticrypt-build
-          staticrypt index.html -p "$STATICRYPT_PASSWORD" -d .staticrypt-build \
-            --short --remember 30 \
-            --template-title "Zarquant | زارکوانت" \
-            --template-instructions "برای دیدن داشبورد، رمز عبور را وارد کنید." \
-            --template-button "ورود" \
-            --template-placeholder "رمز عبور" \
-            --template-remember "مرا به خاطر بسپار" \
-            --template-error "رمز عبور نادرست است." \
-            --template-color-primary "#089981" \
-            --template-color-secondary "#131722"
-          cp .staticrypt-build/index.html index.html
-          rm -rf .staticrypt-build
-          grep -qi "staticrypt" index.html
-          if grep -q "واچ‌لیست" index.html; then
-            echo "::error::index.html still contains plain markup — encryption did not run"
-            exit 1
-          fi
-          echo "index.html encrypted ($(wc -c < index.html) bytes)."
+      - name: Copy plain index.src.html to index.html
+        run: cp index.src.html index.html
 
       - name: Commit updated files
         run: |
